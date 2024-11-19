@@ -3,6 +3,7 @@
 
 ### Description
 This repository contains three R scripts designed for tracking daily activities and analytics, including difficulty, mood, sleep, and exercise, to help analyze personal productivity and well-being.
+It's a personal initiative to track my daily activities, mood and how these things interact
 
 ### Files
 1. **`Create_Files.R`**  
@@ -16,7 +17,7 @@ This repository contains three R scripts designed for tracking daily activities 
 3. **`Daily_Analytics.R`**  
    Processes the data in `Activities.xlsx` to calculate daily metrics, including:
    - Number of activities
-   - Weighted difficulty based on activity, mood, and sleep
+   - Weighted difficulty based on activity, mood, and sleep. With the current parameters, the ideal range for daily weighted difficulty would be a score of around 20-30 to ensure a manageable balance between productivity and well-being.
    - Summary of anxiety, mood, and exercise metrics.
 
 ### Usage
@@ -40,5 +41,6 @@ This repository contains three R scripts designed for tracking daily activities 
 
 3. **Daily Analytics**
    - Run `Daily_Analytics.R` to calculate daily summaries and export the updated `Day_Analytics.xlsx`.
+   - The weighted metric takes into account mood, sleep, number of activities and their difficulties
 
 This is an ongoing project. It will probably be updated for weekly and monthly summaries in the future. 
