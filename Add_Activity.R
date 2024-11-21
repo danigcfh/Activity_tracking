@@ -1,38 +1,63 @@
 library(tidyverse)
+library(readxl)
+library(writexl)
 
-# Install required packages if not already installed
-if (!require("readxl")) install.packages("readxl")
-if (!require("writexl")) install.packages("writexl")
+#Load data
+Activities <- read_excel("Activities.xlsx")
 
-# Create the dataframe
-data <- data.frame(
-  Jour = c(12, 12, 12, 12, 12, 12, 12, 12, 12, 13, 13, 13, 13, 13, 13, 13, 13, 14, 14, 14, 14, 14),
-  Thème = c("House", "House", "House", "Self-care", "Administratif", "Thèse", "Thèse", "Thèse", "Cours", 
-            "Administratif", "Administratif", "Thèse", "Thèse", "Thèse", "Cours", "Others", "Others", 
-            "Thèse", "Thèse", "Thèse", "Thèse", "Thèse"),
-  Activité = c(
-    "Take trash out", "Go get mail and set up heater", "Water plants",
-    "Cook and put dishes in the dishwasher", "Mail: reading and answering",
-    "Send article proposal", "Integrate reviews in article proposal", 
-    "read 1 chapter social media book", "Grade 2 reading assignment", 
-    "Emails: reading and answering", "Confirm conference attendance",
-    "Meeting with new PhD candidate", 
-    "Streamline LDA visualization and start coding for emotion analysis", 
-    "Attend seminar: Content Moderation in a Historic Election Year", 
-    "Grade 1 reading assignment", "Take train to Paris", "Train back to lille", 
-    "Congreso alienación parental", 
-    "LDA models: emotion analysis and distribution + topic distribution", 
-    "Visualization of all 3 matrices", "Streamline code and export relevant data", 
-    "ran Hclust"
-  ),
-  Difficulté = c(1, 2, 1, 2, 2, 2, 4, 3, 3, 2, 1, 3, 5, 3, 3, 2, 2, 4, 5, 4, 5, 4),
-  Sous_catégorie_1 = c("", "", "", "", "", "Publication", "Publication", "Bibliography", "", "", "", "Lab Life", 
-                       "Quanti", "Seminar", "", "", "", "Terrain", "Quanti", "Quanti", "Quanti", "Quanti"),
-  Sous_catégorie_2 = c("", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "")
-)
+#Create function to add activity 
+add_activity <- function(data, topic, activity, difficulty, Sub_category_1 = NA, Sub_category_2 = NA, comment = NA) {
+  day <- Sys.Date()
+  day <- as.Date(day, format = "%d/%m/%Y")
+  
+  # Ensure all inputs are vectors of the same length
+  n <- max(length(topic), length(activity), length(difficulty), length(Sub_category_1), length(Sub_category_2), length(comment))
+  topic <- rep(topic, length.out = n)
+  activity <- rep(activity, length.out = n)
+  difficulty <- rep(difficulty, length.out = n)
+  Sub_category_1 <- rep(Sub_category_1, length.out = n)
+  Sub_category_2 <- rep(Sub_category_2, length.out = n)
+  comment <- rep(comment, length.out = n)
+  
+  # Create a dataframe for new activities
+  new_rows <- data.frame(
+    Day = rep(day, n),
+    Topic = topic,
+    Activity = activity,
+    Difficulty = difficulty,
+    Sub_category_1 = Sub_category_1,
+    Sub_category_2 = Sub_category_2,
+    Comment = comment,
+    stringsAsFactors = FALSE
+  )
+  
+  # Use anti_join to filter out duplicates
+  new_rows_filtered <- new_rows %>%
+    anti_join(data, by = c("Day", "Activity"))
+  
+  if (nrow(new_rows_filtered) == 0) {
+    message("No new activities to add (all are duplicates).")
+    return(data)
+  }
+  
+  # Combine the filtered new activities with the existing data
+  updated_data <- bind_rows(data, new_rows_filtered)
+  message("New activities added.")
+  return(updated_data)
+}
+
+
+#current topics: "Self-care"     "House"         "Administratif" "Thèse"        
+# "Cours"         "Others"        "FEI"              
+
+new_data <- add_activity(Activities, c("Others", "Cours", "Self-care","Administratif" ),
+                         c("Train",
+                           "SoSkilled Pedagogy class",
+                           "Improve tracking algo",
+                           "emails"), c(2,4,4,2))
 
 # Export the dataframe to an Excel file
-write_xlsx(data, "Activities.xlsx")
+write_xlsx(new_data, "Activities.xlsx")
 
 # Confirm the file is saved
 print("File 'Activities.xlsx' saved in the working directory.")
