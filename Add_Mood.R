@@ -7,6 +7,7 @@ library(lubridate)
 #Load data
 Mood <- read_excel("Mood.xlsx")
 str(Mood)
+View(Mood)
 
 add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
   # Ensure day is a Date object
@@ -43,13 +44,13 @@ add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 
 
 
 new_data <-add_mood(Mood,
-                    day = "2024-11-20",
-                    sleep = 3,  
-                    anxiety = 3, 
+                    day = Sys.Date(),
+                    sleep = 4,  
+                    anxiety = 2, 
                     mood = 0, 
                     exercise = 51, 
                     exercise_intensity = 1, 
-                    comment = "Had a spike in anxiety towards the end of the day, pretty sure I was dissociating all day and then it dropped sudenly, I didn't feel particularly bad otherwise so I'm putting neutral mood" ) #input variables as needed
+                    comment = "It snowed! that's pretty neat actually. Still had a very heavy day tho" ) #input variables as needed
 
 
 # Export the dataframe to an Excel file
