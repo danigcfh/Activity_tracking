@@ -23,6 +23,7 @@ Mood_tracking <- data.frame(
   Sleep	= numeric(),# 1-5
   Anxiety	= numeric(), #1-5
   Mood = numeric(),# -5 - 5
+  Healt = numeric(),# -5 - 5
   Exercise = numeric(),# in minutes
   Exercise_intensity = logical(),
   Comment = numeric()
@@ -38,6 +39,7 @@ Analytics <- data.frame(
   Weighted_difficulty = numeric(),
   Anxiety = numeric(),
   Mood = numeric(),
+  Health = numeric(),
   Sleep = numeric(),
   Exercise_weighted = numeric(),
   Main_topic = character(),

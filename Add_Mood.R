@@ -9,11 +9,12 @@ Mood <- read_excel("Mood.xlsx")
 str(Mood)
 View(Mood)
 
-add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
+add_mood <- function(data, sleep, anxiety, mood, health, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
   # Ensure day is a Date object
   if (!inherits(day, "Date")) {
     day <- as.Date(day, format = "%Y-%m-%d")
   } 
+  day <- as.Date(day, format = "%Y-%m-%d")
   
   # Check if the day already exists in the dataset
   existing_row <- which(data$Day == day)
@@ -24,6 +25,7 @@ add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 
     Sleep = sleep,
     Anxiety = anxiety,
     Mood = mood,
+    Health = health, 
     Exercise = exercise,
     Exercise_intensity = exercise_intensity,
     Comment = comment,
@@ -48,7 +50,8 @@ new_data <-add_mood(Mood,
                     sleep = 4,  
                     anxiety = 2, 
                     mood = 0, 
-                    exercise = 51, 
+                    health = 0,
+                    exercise = 42, 
                     exercise_intensity = 1, 
                     comment = "It snowed! that's pretty neat actually. Still had a very heavy day tho" ) #input variables as needed
 

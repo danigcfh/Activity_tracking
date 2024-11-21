@@ -58,7 +58,7 @@ new_activity <- subset(Activities, Day %in% days)
 new_mood <- subset(Mood, Day %in% days)
 
 # Initialize a weighted sum function
-weighted_sum <- function(difficulties, sleep, mood) {
+weighted_sum <- function(difficulties, sleep, mood, health) {
   weights <- 1 + 0.1 * (seq_along(difficulties) - 1)  # Increasing weights
   base_difficulty <- sum(difficulties * weights, na.rm = TRUE)  # Handle NA values
   
@@ -66,9 +66,17 @@ weighted_sum <- function(difficulties, sleep, mood) {
   sleep_factor <- ifelse(is.na(sleep), 1, 1 + (5 - sleep) * 0.1)
   
   # Adjust difficulty based on mood
-  mood_factor <- ifelse(is.na(mood), 1, 1 + -mood / 10)  # Mood in range -5 to 5
+  mood_factor <- ifelse(is.na(mood), 1, 1 + -mood / 20)  # Mood in range -5 to 5
   
-  return(base_difficulty * sleep_factor * mood_factor)
+  # Adjust difficulty based on health
+  health_factor <- ifelse(
+    is.na(health), 
+    1, 
+    ifelse(health >= 0, 1 + health / 50, 1 + health / 10)
+  )  # Positive health has lower impact, negative health has stronger
+  
+  # Combine all factors
+  return(base_difficulty * sleep_factor * mood_factor*health_factor)
 }
 
 
@@ -79,6 +87,7 @@ results <- data.frame(
   Weighted_difficulty = numeric(),
   Anxiety = numeric(),
   Mood = numeric(),
+  Health = numeric(),
   Sleep = numeric(),
   Exercise_weighted = numeric(),
   Main_topic = character(),
@@ -102,11 +111,12 @@ for (day in days) {
   # Use default values for Anxiety, Sleep, and Comment from Mood df
   Anxiety <- ifelse(nrow(mood_day) > 0, mood_day$Anxiety, NA)
   Mood <- ifelse(nrow(mood_day) > 0, mood_day$Mood, NA)
+  Health <- ifelse(nrow(mood_day) > 0, mood_day$Health, NA)
   Sleep <- ifelse(nrow(mood_day) > 0, mood_day$Sleep, NA)
   Comment <- ifelse(nrow(mood_day) > 0, mood_day$Comment, NA)
   
   #Calculate weighted difficulty
-  Weighted_difficulty <- weighted_sum(Difficulties, Sleep, Mood)
+  Weighted_difficulty <- weighted_sum(Difficulties, Sleep, Mood, Health)
   
   # Check for "Exercise" in activities
   Exercise_intensity <- ifelse(nrow(mood_day) > 0, mood_day$Exercise_intensity, NA)
@@ -138,6 +148,7 @@ for (day in days) {
     Anxiety = Anxiety,
     Mood = Mood,
     Sleep = Sleep,
+    Health = Health,
     Exercise_weighted = Exercise,
     Main_topic = Main_topic,
     Main_topic_Activities = Main_topic_Activities,
