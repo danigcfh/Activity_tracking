@@ -39,15 +39,15 @@ Paypal: paypal.me/DaniGCFH
 2. **Adding Activities**
   - Use `Add_Activity.R` to input daily activities. For this purpose, the function add_activity is created. It's possible to add multiple activities by using c()
      ```R
-add_activity <- function(data, day = Sys.Date(), topic, activity, difficulty, Sub_category_1 = NA, Sub_category_2 = NA, comment = NA) 
-     ```
+     add_activity (data, day = Sys.Date(), topic, activity, difficulty, Sub_category_1 = NA, Sub_category_2 = NA, comment = NA)
+     
   - Code was updated to be able to retroactively add activities to previous days
 
 3. **Adding Moods**
   - Use `Add_Moody.R` to input daily mood metrics and exercise. Only one entry per day is permitted. For this purpose, the function add_mood is created
      ```R
-add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
-     ```
+     add_mood (data, sleep, anxiety, mood, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
+
   - Code was updated to be able to retroactively add activities to previous days
 
 4. **Daily Analytics**
@@ -74,7 +74,7 @@ This repository is licensed under CC BY-NC-SA 4.0, which ensures that the code i
 2. **What You Cannot Do**
    - Commercial Use: You may not use this code, or any derivative works, for commercial purposes without explicit permission.
       - This includes selling, licensing, or otherwise monetizing the code or its derivatives.
-      - Re-License Under Incompatible Terms: Derivative works must also remain open and licensed under CC BY-NC-SA 4.0.
+   - Re-License Under Incompatible Terms: Derivative works must also remain open and licensed under CC BY-NC-SA 4.0.
 
 ### My Philosophy
 My work reflects the principles of open science and public accessibility. I believe that knowledge and science should remain open and free, avoiding commercialization that could restrict access or benefit only private actors. By sharing this work under these terms, I aim to support collaborative research and equitable access to scientific tools.
