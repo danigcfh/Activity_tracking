@@ -1,9 +1,14 @@
+This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0 
 
 ## Activity Tracking Scripts
 
 ### Description
 This repository contains three R scripts designed for tracking daily activities and analytics, including difficulty, mood, sleep, and exercise, to help analyze personal productivity and well-being.
-It's a personal initiative to track my daily activities, mood and how these things interact
+It's a personal initiative to track my daily activities, mood and how these things interact.
+
+### Support this project
+You can support this project so it remains free and accessible.
+Paypal: paypal.me/DaniGCFH
 
 ### Files
 1. **`Create_Files.R`**  
@@ -54,5 +59,3 @@ add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 
    - The aggregated difficulty as well as any details and comments added to the activities will be summarized in the output
 
 This is an ongoing project. It will probably be updated for weekly and monthly summaries in the future. 
-
-This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0 
