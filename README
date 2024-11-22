@@ -54,3 +54,5 @@ add_mood <- function(data, sleep, anxiety, mood, exercise, exercise_intensity = 
    - The aggregated difficulty as well as any details and comments added to the activities will be summarized in the output
 
 This is an ongoing project. It will probably be updated for weekly and monthly summaries in the future. 
+
+This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0 
