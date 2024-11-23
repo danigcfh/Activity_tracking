@@ -8,15 +8,15 @@ library(lubridate)
 Mood <- read_excel("Mood.xlsx")
 
 #add mood
-new_data <-add_mood(Mood,
+new_data <-add_mood(data = Mood,
                     day = Sys.Date(),
                     sleep = 4,  
-                    anxiety = 2, 
+                    anxiety = 3, 
                     mood = -1, 
                     health = 0,
                     exercise = 44, 
                     exercise_intensity = 1, 
-                    comment = "Slight communication problem with Cecil, nothing big but conflict is stressful." ) #input variables as needed
+                    comment = "Slight communication problem with Cecil, nothing big but conflict is stressful.Got really hyperfocused on this little project huh" ) #input variables as needed
 
 
 #Scale for anxiety

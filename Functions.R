@@ -30,12 +30,6 @@ add_activity <- function(data = NA, day = Sys.Date(), topic, activity, difficult
     stringsAsFactors = FALSE
   )
   
-  # If `data` is NA, return the new rows
-  if (is.na(data)) {
-    message("No existing data provided. Returning new rows.")
-    return(new_rows)
-  }
-  
   # Use anti_join to filter out duplicates
   new_rows_filtered <- new_rows %>%
     anti_join(data, by = c("Day", "Activity"))
@@ -70,12 +64,6 @@ add_mood <- function(data = NA, sleep, anxiety, mood, health, exercise, exercise
     Comment = comment,
     stringsAsFactors = FALSE
   )
-  
-  # If `data` is NA, return the new row
-  if (is.na(data)) {
-    message("No existing data provided. Returning new row.")
-    return(new_row)
-  }
   
   # Check if the day already exists in the dataset
   existing_row <- which(data$Day == day)

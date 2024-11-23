@@ -11,26 +11,24 @@ Activities <- read_excel("Activities.xlsx")
 new_data <- add_activity(Activities,
                          topic = c("House",
                                    "Others",
+                                   "Administratif",
                                    "Others",
-                                   "",
-                                   "",
-                                   "",
-                                   "",
-                                   "",
-                                   "",
-                                   "" ),
+                                   "Others",
+                                   "Others",
+                                   "Others"),
                          activity = c("Dishes",
                            "Out shopping with Lea",
-                           "upgrade tracking algo",
-                           "",
-                           "",
-                           "",
-                           "",
-                           "",
-                           "",
-                           ""), 
-                         difficulty = c(2,4,4,,,,,,,),
-                         Sub_category_1 = c(NA,NA,"Personnal project",NA,NA,NA, NA,NA,NA,NA)
+                           "Cancel/manage subscriptions and mail",
+                           "Develop initial Interface ",
+                           "Develop initial Server",
+                           "Add graphs and interactive summaries",
+                           "app Mise en page in different pages with custom info"
+                           ), 
+                         difficulty = c(2,4,1,5,5,5,4),
+                         Sub_category_1 = c(NA,NA,NA,"Personnal project",
+                                            "Personnal project",
+                                            "Personnal project","Personnal project"
+                                            )
                          )
 
 #Difficulty scale
