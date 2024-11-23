@@ -13,13 +13,10 @@ Activities$Day <- as.Date(Activities$Day, format = "%d/%m/%Y")
 Per_day$Day <- as.Date(Per_day$Day, format = "%d/%m/%Y")
 Mood$Day <- as.Date(Mood$Day, format = "%d/%m/%Y")
 
-
-
 #avoid duplicates
 Per_day <- Per_day %>% distinct()
 Activities <- Activities %>% distinct()
 Mood <- Mood %>% distinct()
-
 
 # Exclude old data explicitly
 # Identify days with added or changed activities
@@ -57,33 +54,13 @@ days <- unique(c(affected_activity_days, affected_mood_days))
 new_activity <- subset(Activities, Day %in% days)
 new_mood <- subset(Mood, Day %in% days)
 
-# Initialize a weighted sum function
-weighted_sum <- function(difficulties, sleep, mood, health) {
-  weights <- 1 + 0.1 * (seq_along(difficulties) - 1)  # Increasing weights
-  base_difficulty <- sum(difficulties * weights, na.rm = TRUE)  # Handle NA values
-  
-  # Adjust difficulty based on sleep
-  sleep_factor <- ifelse(is.na(sleep), 1, 1 + (5 - sleep) * 0.1)
-  
-  # Adjust difficulty based on mood
-  mood_factor <- ifelse(is.na(mood), 1, 1 + -mood / 20)  # Mood in range -5 to 5
-  
-  # Adjust difficulty based on health
-  health_factor <- ifelse(
-    is.na(health), 
-    1, 
-    ifelse(health >= 0, 1 + health / 50, 1 + health / 10)
-  )  # Positive health has lower impact, negative health has stronger
-  
-  # Combine all factors
-  return(base_difficulty * sleep_factor * mood_factor*health_factor)
-}
 
-
-# Create an empty dataframe for results
+# Create an empty data frame for results
 results <- data.frame(
   Day = as.Date(character()),  # Explicitly set as Date
   Activities = integer(),
+  Base_difficulty = numeric(),
+  Factor_difficylty = numeric(),
   Weighted_difficulty = numeric(),
   Anxiety = numeric(),
   Mood = numeric(),
@@ -106,7 +83,7 @@ for (day in days) {
   # Extract metrics
   Difficulties <- activity_day$Difficulty
   Day <- as.Date(day, format = "%d/%m/%Y")  # Ensure the day is a Date type
-  Activities <- length(activity_day$Activity[!is.na(activity_day$Difficulty)])  # Count valid difficulties
+  numActivities <- length(activity_day$Activity[!is.na(activity_day$Difficulty)])  # Count valid difficulties
 
   # Use default values for Anxiety, Sleep, and Comment from Mood df
   Anxiety <- ifelse(nrow(mood_day) > 0, mood_day$Anxiety, NA)
@@ -116,7 +93,11 @@ for (day in days) {
   Comment <- ifelse(nrow(mood_day) > 0, mood_day$Comment, NA)
   
   #Calculate weighted difficulty
-  Weighted_difficulty <- weighted_sum(Difficulties, Sleep, Mood, Health)
+  Difficulty_calcs <- weighted_sum(Difficulties, Sleep, Mood, Health)
+  
+  Base_difficulty <-  Difficulty_calcs[1]
+  Factor_difficulty <-  Difficulty_calcs[2]
+  Weighted_difficulty <-  Difficulty_calcs[3]
   
   # Check for "Exercise" in activities
   Exercise_intensity <- ifelse(nrow(mood_day) > 0, mood_day$Exercise_intensity, NA)
@@ -143,7 +124,9 @@ for (day in days) {
   # Create a new row
   row <- data.frame(
     Day = Day,  # Ensure the Day column is of Date type
-    Activities = Activities,
+    Activities = numActivities,
+    Base_difficulty = Base_difficulty,
+    Factor_difficylty = Factor_difficulty,
     Weighted_difficulty = Weighted_difficulty,
     Anxiety = Anxiety,
     Mood = Mood,

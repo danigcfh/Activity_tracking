@@ -6,56 +6,60 @@ library(lubridate)
 
 #Load data
 Mood <- read_excel("Mood.xlsx")
-str(Mood)
-View(Mood)
 
-add_mood <- function(data, sleep, anxiety, mood, health, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
-  # Ensure day is a Date object
-  if (!inherits(day, "Date")) {
-    day <- as.Date(day, format = "%Y-%m-%d")
-  } 
-  day <- as.Date(day, format = "%Y-%m-%d")
-  
-  # Check if the day already exists in the dataset
-  existing_row <- which(data$Day == day)
-  
-  # Create a new row based on input
-  new_row <- data.frame(
-    Day = day,
-    Sleep = sleep,
-    Anxiety = anxiety,
-    Mood = mood,
-    Health = health, 
-    Exercise = exercise,
-    Exercise_intensity = exercise_intensity,
-    Comment = comment,
-    stringsAsFactors = FALSE
-  )
-  
-  #delete old row
-  if (length(existing_row)>0){
-    data <- data[-existing_row, ]
-  }
-  
-  
-  # Add the new row to the existing dataset
-  updated_data <- rbind(data, new_row)
-  
-  return(updated_data)
-}
-
-
+#add mood
 new_data <-add_mood(Mood,
                     day = Sys.Date(),
                     sleep = 4,  
                     anxiety = 2, 
-                    mood = 0, 
+                    mood = -1, 
                     health = 0,
-                    exercise = 42, 
+                    exercise = 44, 
                     exercise_intensity = 1, 
-                    comment = "It snowed! that's pretty neat actually. Still had a very heavy day tho" ) #input variables as needed
+                    comment = "Slight communication problem with Cecil, nothing big but conflict is stressful." ) #input variables as needed
 
 
+#Scale for anxiety
+# To take into account, single events can push anxiety number up even if the day overall is a lesser score
+# 10: Panic attack
+# 5: High level Anxiety sustained all the day
+# 4: Sustained low level anxiety (annoying but not debilitating) all day or mixed with occasional high level anxiety
+# 3: semi-regular low level anxiety
+# 2: Mostly relaxed, seldom activated
+# 1: perfect relaxation
+
+#Scale for Sleep
+# 5: Perfectly rested – Indicates optimal sleep with no noticeable impact on functionality.
+# 4: Minor disturbances – Sleep quality is slightly impaired, but it has minimal effect on functionality the next day.
+# 3: Wakes up tired – Sleep quality is compromised, leading to limited but noticeable difficulty in functioning the next day.
+# 2: Major disturbances – Sleep disruptions significantly affect how well one can perform tasks the next day.
+# 1: Significant impairment – This rating implies very poor sleep quality that greatly impairs performance.
+# -1: No sleep, need an entire day to recover – Reflects extreme impairment where sleep deprivation results in a complete inability to perform tasks and necessitates an entire recovery period.
+
+
+#Scale for Mood
+# 5: Upbeat, confident, and full of energy. 
+# 4: Cheerful and motivated. 
+# 3: Happy, lively
+# 2: Happy, chill
+# 1: Content, at ease
+# 0: neutral
+# -1: Manageable emotional discomfort
+# -2: Frustrated or mildly discouraged. 
+# -3: Sad, unmotivated, make slightly harder to make decisions
+# -4: Depressive, emotionally drained, it's significantly harder to focus or take decisions
+# -5: Deep depression, overwhelmed and hopeless, no motivation, energy or concentration and/or panic attack during the day, impossible to focus or take decisions
+
+
+#Scale for health
+# 0: normal, no health problems, individual baseline
+# -1: Slight physical discomfort: might affect focus but manageable
+# -2: Mild illness or injury : distracting and noticeable
+# -3: Moderate illness or injury : hard to ignore, interrupts some activities
+# -4: Severe illness or injury: prevents doing daily activities
+# -5: Extreme physical impairment: as bad as it can be 
+
+View(new_data)
 # Export the dataframe to an Excel file
 write_xlsx(new_data, "Mood.xlsx")
 

@@ -16,16 +16,21 @@ Paypal: paypal.me/DaniGCFH
    - `Activities.xlsx`: Tracks individual activities and their attributes.
    - `Day_Analytics.xlsx`: Summarizes daily metrics.
    
-2. **`Add_Activity.R`**  
+2. **`Functions.R`**  
+   Defines functions for
+   - Adding activity and mood to their respective excel files
+   - Calculating difficulty levels in aggregate, a modulating factor from sleep, mood and health scores, and the overall weighted difficulty
+   
+3. **`Add_Activity.R`**  
    Updates `Activities.xlsx` by appending new rows for daily activities.
 
-3. **`Daily_Analytics.R`**  
+4. **`Daily_Analytics.R`**  
    Processes the data in `Activities.xlsx` and `Mood.xlsx`to calculate daily metrics, including:
    - Number of activities
    - Weighted difficulty based on activity, mood, and sleep. With the current parameters, the ideal range for daily weighted difficulty would be a score of around 20-30 to ensure a manageable balance between productivity and well-being.
    - Summary of anxiety, mood, and exercise metrics.
 
-4. **`Topic_Analytics.R`**  
+5. **`Topic_Analytics.R`**  
   Processes the data in `Activities.xlsx` to provide a summary of activities done per day and topic, including:
   - Number of activities per day and in aggregate
   - Aggregated difficulty (not considering weights)
@@ -36,19 +41,24 @@ Paypal: paypal.me/DaniGCFH
    - Customize column values based on your needs.
    - Warning: this script should only run once, as the scripts created this way will be then used and updated with the following scripts
 
-2. **Adding Activities**
+2. **Initialize functions**
+  - Use `Functions.R` to initialize all the functions needed for the next scripts 
+
+3. **Adding Activities**
   - Use `Add_Activity.R` to input daily activities. For this purpose, the function add_activity is created. It's possible to add multiple activities by using c()
      ```R
      add_activity (data, day = Sys.Date(), topic, activity, difficulty, Sub_category_1 = NA, Sub_category_2 = NA, comment = NA)
      
   - Code was updated to be able to retroactively add activities to previous days
+```
 
-3. **Adding Moods**
+4. **Adding Moods**
   - Use `Add_Moody.R` to input daily mood metrics and exercise. Only one entry per day is permitted. For this purpose, the function add_mood is created
      ```R
      add_mood (data, sleep, anxiety, mood, exercise, exercise_intensity = 1, comment = NA,   day = Sys.Date()) {
 
   - Code was updated to be able to retroactively add activities to previous days
+```
 
 4. **Daily Analytics**
    - Run `Daily_Analytics.R` to calculate daily summaries and export the updated `Day_Analytics.xlsx`.
