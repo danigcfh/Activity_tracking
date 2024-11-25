@@ -7,7 +7,8 @@ library(tidyverse)
 library(readxl)
 library(writexl)
 library(bslib)
-library(shinyjs)
+library(shinyBS)
+
 
 
 # Helper functions (Assume add_activity and add_mood are defined in Functions.R)
@@ -352,10 +353,31 @@ server <- function(input, output, session) {
           column(6,
                  h4("Add daily evaluation"),
                  dateInput("mood_date", "Date:", value = Sys.Date()),
-                 sliderInput("sleep", "Sleep:", min = -1, max = 5, value = 2),
-                 sliderInput("anxiety", "Anxiety:", min = 1, max = 5, value = 2),
-                 sliderInput("mood", "Mood:", min = -10, max = 10, value = 0),
-                 sliderInput("health", "Health:", min = -5, max = 1, value = 0),
+                 
+                 # Sleep Input and Help Button
+                 fluidRow(
+                   column(10, sliderInput("sleep", "Sleep:", min = -1, max = 5, value = 2)),
+                   column(2, actionButton("help_sleep", "?", class = "btn-info btn-sm"))
+                 ),
+                 
+                 # Anxiety Input and Help Button
+                 fluidRow(
+                   column(10, sliderInput("anxiety", "Anxiety:", min = 1, max = 5, value = 2)),
+                   column(2, actionButton("help_anxiety", "?", class = "btn-info btn-sm"))
+                 ),
+                 
+                 # Mood Input and Help Button
+                 fluidRow(
+                   column(10, sliderInput("mood", "Mood:", min = -5, max = 5, value = 0)),
+                   column(2, actionButton("help_mood", "?", class = "btn-info btn-sm"))
+                 ),
+                 
+                 # Health Input and Help Button
+                 fluidRow(
+                   column(10, sliderInput("health", "Health:", min = -5, max = 1, value = 0)),
+                   column(2, actionButton("help_health", "?", class = "btn-info btn-sm"))
+                 ),
+                 
                  numericInput("exercise", "Exercise Duration (minutes):", value = 0),
                  selectInput("exercise_intensity", "Exercise Intensity:", c("Low", "High")),
                  textAreaInput("mood_comment", "Comments:"),
@@ -368,6 +390,74 @@ server <- function(input, output, session) {
         actionButton("update_files", "Update Files")
       )
     )
+  })
+  # Modal for Sleep Scale
+  observeEvent(input$help_sleep, {
+    showModal(modalDialog(
+      title = "Sleep Scale Description",
+      tags$ul(
+        tags$li("5: Perfectly rested – Indicates optimal sleep with no noticeable impact on functionality."),
+        tags$li("4: Minor disturbances – Sleep quality is slightly impaired, with minimal effect on functionality."),
+        tags$li("3: Wakes up tired – Sleep quality is compromised, leading to limited but noticeable difficulty in functioning."),
+        tags$li("2: Major disturbances – Sleep disruptions significantly affect task performance."),
+        tags$li("1: Significant impairment – Reflects very poor sleep quality that greatly impairs performance."),
+        tags$li("-1: No sleep – Extreme impairment; sleep deprivation necessitates a full recovery day.")
+      ),
+      easyClose = TRUE
+    ))
+  })
+  
+  # Modal for Anxiety Scale
+  observeEvent(input$help_anxiety, {
+    showModal(modalDialog(
+      title = "Anxiety Scale Description",
+      tags$ul(
+        tags$li("10: Panic attack (check the box for this)."),
+        tags$li("5: High-level anxiety sustained all day."),
+        tags$li("4: Sustained low-level anxiety (annoying but not debilitating) all day or mixed with occasional high-level anxiety."),
+        tags$li("3: Semi-regular low-level anxiety."),
+        tags$li("2: Mostly relaxed, seldom activated."),
+        tags$li("1: Perfect relaxation.")
+      ),
+      easyClose = TRUE
+    ))
+  })
+  
+  # Modal for Mood Scale
+  observeEvent(input$help_mood, {
+    showModal(modalDialog(
+      title = "Mood Scale Description",
+      tags$ul(
+        tags$li("5: Upbeat, confident, and full of energy."),
+        tags$li("4: Cheerful and motivated."),
+        tags$li("3: Happy, lively."),
+        tags$li("2: Happy, chill."),
+        tags$li("1: Content, at ease."),
+        tags$li("0: Neutral."),
+        tags$li("-1: Manageable emotional discomfort."),
+        tags$li("-2: Frustrated or mildly discouraged."),
+        tags$li("-3: Sad, unmotivated, slightly harder to make decisions."),
+        tags$li("-4: Depressive, emotionally drained, significantly harder to focus or make decisions."),
+        tags$li("-5: Deep depression, overwhelmed, and hopeless; no motivation, energy, or concentration, and/or panic attack during the day.")
+      ),
+      easyClose = TRUE
+    ))
+  })
+  
+  # Modal for Health Scale
+  observeEvent(input$help_health, {
+    showModal(modalDialog(
+      title = "Health Scale Description",
+      tags$ul(
+        tags$li("0: Normal, no health problems, individual baseline."),
+        tags$li("-1: Slight physical discomfort; might affect focus but manageable."),
+        tags$li("-2: Mild illness or injury; distracting and noticeable."),
+        tags$li("-3: Moderate illness or injury; hard to ignore, interrupts some activities."),
+        tags$li("-4: Severe illness or injury; prevents doing daily activities."),
+        tags$li("-5: Extreme physical impairment; as bad as it can be.")
+      ),
+      easyClose = TRUE
+    ))
   })
   
   # Observe event when the user selects "Other (Add new)" for Topic
@@ -384,6 +474,15 @@ server <- function(input, output, session) {
     } else if (input$topic == "No predefined categories") {
       # Automatically set Topic to NA when "No predefined categories" is selected
       updateSelectInput(session, "topic", selected = "")
+    }
+  })
+  
+  #Overwrite anxiety measure when panic attack is selected
+  observeEvent(input$panic_attack, {
+    if (input$panic_attack) {
+      updateSliderInput(session, "anxiety", value = 10) # Set slider to 10
+    } else if (input$anxiety == 10) {
+      updateSliderInput(session, "anxiety", value = 2) # Reset slider when unchecked
     }
   })
   
@@ -788,7 +887,7 @@ server <- function(input, output, session) {
   # Render dynamic UI for variable selection (filtering)
   output$variables_ui_1 <- renderUI({
     active_tab <- input$raw_data_tabs
-    columns_for_activities <- c("Topic", "Difficulty", "Sub_category_1", "Sub_category_2")
+    columns_for_activities <- c("Topic", "Difficulty", "Sub_Category_1", "Sub_Category_2")
     columns_for_summary <- c("Activities", "Anxiety", "Mood", "Health", "Sleep", "Main_topic")
     
     if (active_tab == "Activities") {

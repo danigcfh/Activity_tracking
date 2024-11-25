@@ -9,8 +9,8 @@ Activities_tracking <- data.frame(
   Topic = character(),# personnally divided by house, self care, administrative stuff, class, research, etc
   Activity = character(),# description of activity
   Difficulty = numeric(),# 1-5
-  Sub_category_1 = character(),# further description if needed
-  Sub_category_2 = character(),# further description if needed
+  Sub_Category_1 = character(),# further description if needed
+  Sub_Category_2 = character(),# further description if needed
   Comment = numeric()
 )
 

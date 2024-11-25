@@ -100,7 +100,7 @@ for (day in days) {
   Weighted_difficulty <-  Difficulty_calcs[3]
   
   # Check for "Exercise" in activities
-  Exercise <- ifelse(!is.na(mood_day$Exercise), ifelse(mood_day$Exercise_intensity == "High", mood_day$Exercise*2, mood_day$Exercise), NA)
+  Exercise <- ifelse(!is.na(mood_day$Exercise), ifelse(mood_day$Exercise_Intensity == "High", mood_day$Exercise*2, mood_day$Exercise), NA)
   
   # Identify main topic
   topics <- unique(activity_day$Topic)
@@ -124,7 +124,7 @@ for (day in days) {
     Day = Day,  # Ensure the Day column is of Date type
     Activities = numActivities,
     Base_difficulty = Base_difficulty,
-    Factor_difficylty = Factor_difficulty,
+    Factor_difficulty = Factor_difficulty,
     Weighted_difficulty = Weighted_difficulty,
     Anxiety = Anxiety,
     Mood = Mood,

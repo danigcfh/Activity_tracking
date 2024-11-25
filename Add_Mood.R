@@ -11,13 +11,13 @@ Mood <- read_excel("Mood.xlsx")
 new_data <-add_mood(data = Mood,
                     day = Sys.Date(),
                     sleep = 4,  
-                    anxiety = 3, 
-                    mood = -1, 
+                    anxiety = 2, 
+                    mood = 3, 
                     health = 0,
-                    exercise = 44, 
-                    exercise_intensity = 1, 
-                    comment = "Slight communication problem with Cecil, nothing big but conflict is stressful.Got really hyperfocused on this little project huh" ) #input variables as needed
-
+                    exercise = 23, 
+                    exercise_intensity = "Low", 
+                    comment = "Most of the day was spent hyperfixating in developing the app, overall a good day, good food and company even if I did spent most of the time struggling with coding"
+)
 
 #Scale for anxiety
 # To take into account, single events can push anxiety number up even if the day overall is a lesser score

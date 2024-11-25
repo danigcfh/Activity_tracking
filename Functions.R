@@ -14,8 +14,8 @@ add_activity <- function(data = NA, day = Sys.Date(), topic, activity, difficult
   topic <- rep(topic, length.out = n)
   activity <- rep(activity, length.out = n)
   difficulty <- rep(difficulty, length.out = n)
-  Sub_category_1 <- rep(Sub_category_1, length.out = n)
-  Sub_category_2 <- rep(Sub_category_2, length.out = n)
+  Sub_Category_1 <- rep(Sub_category_1, length.out = n)
+  Sub_Category_2 <- rep(Sub_category_2, length.out = n)
   comment <- rep(comment, length.out = n)
   
   # Create a dataframe for new activities
@@ -24,8 +24,8 @@ add_activity <- function(data = NA, day = Sys.Date(), topic, activity, difficult
     Topic = topic,
     Activity = activity,
     Difficulty = difficulty,
-    Sub_category_1 = Sub_category_1,
-    Sub_category_2 = Sub_category_2,
+    Sub_Category_1 = Sub_Category_1,
+    Sub_Category_2 = Sub_Category_2,
     Comment = comment,
     stringsAsFactors = FALSE
   )
@@ -140,5 +140,22 @@ weighted_sum <- function(difficulties, sleep, mood, health) {
   Weighted_difficulty <- base_difficulty * sleep_factor * mood_factor*health_factor
   # Combine all factors
   return(c(base_difficulty, overall_factor, Weighted_difficulty))
+}
+
+
+# Helper function to enforce column classes
+enforce_column_classes <- function(data, reference_df) {
+  for (col in colnames(reference_df)) {
+    if (col %in% colnames(data)) {
+      # Cast the column to the reference type
+      data[[col]] <- as(data[[col]], class(reference_df[[col]]))
+    } else {
+      # Add missing columns with default values
+      data[[col]] <- reference_df[[col]]
+    }
+  }
+  # Remove extra columns not in the reference
+  data <- data[colnames(reference_df)]
+  return(data)
 }
 

@@ -6,30 +6,40 @@ library(writexl)
 Activities <- read_excel("Activities.xlsx")
 
 #current topics: "Self-care"     "House"         "Administratif" "Thèse"        
-# "Cours"         "Others"        "FEI"              
+# "Cours"         "Others"        "FEI"         "AppDevelopment"     
 
-new_data <- add_activity(Activities,
-                         topic = c("House",
-                                   "Others",
-                                   "Administratif",
-                                   "Others",
-                                   "Others",
-                                   "Others",
-                                   "Others"),
-                         activity = c("Dishes",
-                           "Out shopping with Lea",
-                           "Cancel/manage subscriptions and mail",
-                           "Develop initial Interface ",
-                           "Develop initial Server",
-                           "Add graphs and interactive summaries",
-                           "app Mise en page in different pages with custom info"
+new_data <- add_activity(data = Activities,
+                         topic = c("Administratif",
+                                   "House",
+                                   "House",
+                                   "House",
+                                   "AppDevelopment",
+                                   "AppDevelopment",
+                                   "AppDevelopment",
+                                   "AppDevelopment",
+                                   "AppDevelopment",
+                                   "AppDevelopment"),
+                         activity = c("Appointments and train reservation",
+                           "Groceries",
+                           "Plant upkeep",
+                           "Cook",
+                           "Conditional access to other tabs and Create initial tab ",
+                           "Create reactive buttons for both downloading blank templates and uploading relevant files",
+                           "Debug uploaded files: ensure column and type consistency accross files ",
+                           "create reactive Uis and personalize data input options",
+                           "Ensure date consistency acroos files ",
+                           "create reactive button for updating files or downloading raw data"
                            ), 
-                         difficulty = c(2,4,1,5,5,5,4),
-                         Sub_category_1 = c(NA,NA,NA,"Personnal project",
+                         difficulty = c(1,3,2,2,3,4,4,4,2,3),
+                         Sub_category_1 = c(NA,NA,NA, NA, "Personnal project",
                                             "Personnal project",
+                                            "Personnal project","Personnal project",
                                             "Personnal project","Personnal project"
                                             )
                          )
+
+
+new_data$Sub_Category_1[new_data$Sub_Category_1=="Personnal project"] <- NA
 
 #Difficulty scale
 # 5: Tasks that are mentally or physically exhausting, requiring extreme concentration, effort, or time
