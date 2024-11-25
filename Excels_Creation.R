@@ -70,7 +70,7 @@ Mood_tracking <- data.frame(
   
   
   Exercise = numeric(),# in minutes
-  Exercise_intensity = logical(),
+  Exercise_Intensity = logical(),
   Comment = numeric()
 )
 

@@ -60,7 +60,7 @@ results <- data.frame(
   Day = as.Date(character()),  # Explicitly set as Date
   Activities = integer(),
   Base_difficulty = numeric(),
-  Factor_difficylty = numeric(),
+  Factor_difficulty = numeric(),
   Weighted_difficulty = numeric(),
   Anxiety = numeric(),
   Mood = numeric(),
@@ -100,9 +100,7 @@ for (day in days) {
   Weighted_difficulty <-  Difficulty_calcs[3]
   
   # Check for "Exercise" in activities
-  Exercise_intensity <- ifelse(nrow(mood_day) > 0, mood_day$Exercise_intensity, NA)
-  Exercise_base <- ifelse(nrow(mood_day) > 0, mood_day$Exercise, NA)
-  Exercise <- ifelse(!is.na(Exercise_base), Exercise_base * Exercise_intensity, NA)
+  Exercise <- ifelse(!is.na(mood_day$Exercise), ifelse(mood_day$Exercise_intensity == "High", mood_day$Exercise*2, mood_day$Exercise), NA)
   
   # Identify main topic
   topics <- unique(activity_day$Topic)

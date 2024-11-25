@@ -20,7 +20,7 @@ add_activity <- function(data = NA, day = Sys.Date(), topic, activity, difficult
   
   # Create a dataframe for new activities
   new_rows <- data.frame(
-    Day = rep(day, n),
+    Day = rep(as.Date(day), n),
     Topic = topic,
     Activity = activity,
     Difficulty = difficulty,
@@ -54,13 +54,13 @@ add_mood <- function(data = NA, sleep, anxiety, mood, health, exercise, exercise
   
   # Create a new row based on input
   new_row <- data.frame(
-    Day = day,
+    Day = as.Date(day),
     Sleep = sleep,
     Anxiety = anxiety,
     Mood = mood,
     Health = health,
     Exercise = exercise,
-    Exercise_intensity = exercise_intensity,
+    Exercise_Intensity = exercise_intensity,
     Comment = comment,
     stringsAsFactors = FALSE
   )
