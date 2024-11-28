@@ -3,21 +3,24 @@ library(readxl)
 library(writexl)
 library(lubridate)
 
+#This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0
+
 
 #Load data
-Mood <- read_excel("Mood.xlsx")
+Per_day <- read_excel("Day_Analytics.xlsx")
+
+View(Mood)
 
 #add mood
-new_data <-add_mood(data = Mood,
-                    day = Sys.Date(),
+new_data <-add_mood(data = Per_day,
+                    day = Sys.Date()-1,
                     sleep = 4,  
                     anxiety = 2, 
-                    mood = 3, 
+                    mood = 2, 
                     health = 0,
-                    exercise = 23, 
-                    exercise_intensity = "Low", 
-                    comment = "Most of the day was spent hyperfixating in developing the app, overall a good day, good food and company even if I did spent most of the time struggling with coding"
-)
+                    exercise_low = 48, 
+                    exercise_high = NA, 
+                    comment = "pretty good day overall, always exhausting to go to paris but got to actually enter the CEMTI this time")
 
 #Scale for anxiety
 # To take into account, single events can push anxiety number up even if the day overall is a lesser score
@@ -61,7 +64,7 @@ new_data <-add_mood(data = Mood,
 
 View(new_data)
 # Export the dataframe to an Excel file
-write_xlsx(new_data, "Mood.xlsx")
+write_xlsx(new_data, "Day_Analytics.xlsx")
 
 
 

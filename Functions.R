@@ -1,4 +1,6 @@
 library(dplyr)
+#This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0
+
 
 # Functions
 
@@ -46,11 +48,13 @@ add_activity <- function(data = NA, day = Sys.Date(), topic, activity, difficult
 }
 
 # Function to add mood to existing df (avoids duplicates by date)
-add_mood <- function(data = NA, sleep, anxiety, mood, health, exercise, exercise_intensity = 1, comment = NA, day = Sys.Date()) {
+add_mood <- function(data = NA, sleep, anxiety, mood, health, exercise_low, exercise_high, comment = NA, day = Sys.Date(), Needs_Update = TRUE) {
   # Ensure day is a Date object
   if (!inherits(day, "Date")) {
     day <- as.Date(day, format = "%Y-%m-%d")
   }
+  
+  Exercise_weighted <- sum(c(exercise_low, exercise_high) * c(1, 2), na.rm = TRUE)  # Low exercise gets weight 1, High exercise gets weight 2
   
   # Create a new row based on input
   new_row <- data.frame(
@@ -59,25 +63,36 @@ add_mood <- function(data = NA, sleep, anxiety, mood, health, exercise, exercise
     Anxiety = anxiety,
     Mood = mood,
     Health = health,
-    Exercise = exercise,
-    Exercise_Intensity = exercise_intensity,
+    Exercise_Low = exercise_low,# in minutes
+    Exercise_High= exercise_high,
+    Exercise_weighted = Exercise_weighted,  # Correct weighted value here
     Comment = comment,
+    Needs_Update = Needs_Update,
     stringsAsFactors = FALSE
   )
+  
+  # Ensure that we only keep columns that exist in the original dataframe
+  new_row <- new_row[, colnames(new_row) %in% colnames(data), drop = FALSE]
   
   # Check if the day already exists in the dataset
   existing_row <- which(data$Day == day)
   
-  # Remove the old row if it exists
   if (length(existing_row) > 0) {
-    data <- data[-existing_row, ]
+    # If the day already exists, compare values to check for updates
+    old_row <- data[existing_row, colnames(new_row), drop = FALSE]
+    if (!all.equal(new_row, old_row, ignore.row.order = TRUE)) {
+      # If any value is different, set needs_update to TRUE
+      new_row$Needs_Update <- TRUE
+    }
+    # Update the existing row with the new data (only for matching columns)
+    data[existing_row, colnames(new_row)] <- new_row
+  } else {
+    # If the day does not exist, add the new row (only matching columns)
+    data <- bind_rows(data, new_row)
   }
   
-  # Add the new row to the existing dataset
-  updated_data <- rbind(data, new_row)
-  
   message("Mood entry added/updated.")
-  return(updated_data)
+  return(data)
 }
 
 
@@ -157,5 +172,128 @@ enforce_column_classes <- function(data, reference_df) {
   # Remove extra columns not in the reference
   data <- data[colnames(reference_df)]
   return(data)
+}
+
+# Define a function to calculate urgency
+calculate_urgency <- function(Recommended_date, dependencies) {
+  # Calculate days remaining
+  days_remaining <- as.numeric(Recommended_date - Sys.Date())
+  
+  # Adjust for dependencies (e.g., add +3 urgency if there are dependencies)
+  dependency_adjustment <- ifelse(dependencies == TRUE, 3, 0)
+  
+  # Combine the days remaining with dependencies adjustment
+  urgency_score <- days_remaining - dependency_adjustment
+  
+  # Apply the urgency scale
+  urgency <- case_when(
+    is.na(Recommended_date) ~ 1,  # Default to 1 if Recommended_date is NA
+    urgency_score <= 0 ~ 5,  # Immediate: already overdue or due today
+    urgency_score <= 7 ~ 4,  # High: due within a week
+    urgency_score <= 14 ~ 3, # Medium: due within two weeks
+    TRUE ~ 2 
+  )
+  return(urgency)
+}
+
+calculate_recommended_date <- function(due_date, estimated_time, importance) {
+  # Ensure due_date is a Date object
+  due_date <- as.Date(due_date, format = "%Y-%m-%d")
+  
+  # Calculate the recommended date using case_when
+  recommended_date <- dplyr::case_when(
+    is.na(due_date) & estimated_time <= 1 ~ Sys.Date(),
+    is.na(due_date) & importance == 5 ~ Sys.Date() + 7,
+    is.na(due_date) & importance %in% c(3, 4) ~ Sys.Date() + 14,
+    !is.na(due_date) & estimated_time <= 1 ~ due_date,
+    !is.na(due_date) & estimated_time <= 3 ~ due_date - 1,
+    !is.na(due_date) & estimated_time <= 5 ~ due_date - 2,
+    !is.na(due_date) ~ due_date - 3,
+    TRUE ~ NA_Date_  # Default to NA if none of the conditions match
+  )
+  
+  return(recommended_date)
+}
+
+add_to_do <- function(data = NULL, due_date, topic, activity, difficulty, 
+                      estimated_time, importance, dependencies = FALSE, 
+                      Sub_category_1 = NA, 
+                      Sub_category_2 = NA, comment = NA) {
+  # Ensure due_date and due_date_dependencies are Date objects
+  due_date <- as.Date(due_date, format = "%Y-%m-%d")
+
+  # Calculate recommended date
+  recommended_date <- calculate_recommended_date(due_date, estimated_time, importance)
+  
+  # Calculate urgency
+  urgency <- calculate_urgency(recommended_date, dependencies)
+  
+  # Calculate priority
+  priority <- urgency + importance + difficulty
+  
+  # Create a new data frame for the activity
+  new_rows <- data.frame(
+    Last_updated = Sys.Date(),
+    Due_date = due_date,
+    Recommended_date = recommended_date,
+    Topic = topic,
+    Activity = activity,
+    Difficulty = difficulty,
+    Estimated_time = estimated_time,
+    Importance = importance,
+    Dependencies = dependencies,
+    Urgency = urgency,
+    Priority = priority,
+    Sub_category_1 = Sub_category_1,
+    Sub_category_2 = Sub_category_2,
+    Comment = comment,
+    stringsAsFactors = FALSE
+  )
+  
+  # Handle initialization of `data`
+  if (is.null(data)) {
+    data <- new_rows
+  } else {
+    # Check for duplicates using anti_join
+    new_rows_filtered <- new_rows %>%
+      dplyr::anti_join(data, by = c("Due_date", "Activity"))
+    
+    if (nrow(new_rows_filtered) == 0) {
+      message("No new activities to add (all are duplicates).")
+      return(data)
+    }
+    
+    # Combine new activities with the existing data
+    data <- dplyr::bind_rows(data, new_rows_filtered)
+  }
+  
+  message("New activities added.")
+  return(data)
+}
+
+
+# Function to remove an activity from the data frame
+remove_activity <- function(data, day = NA, activity = NA, topic = NA) {
+  # Ensure day is a Date object if provided
+  if (!is.na(day) && !inherits(day, "Date")) {
+    day <- as.Date(day, format = "%Y-%m-%d")
+  }
+  
+  # Filter out rows matching the provided parameters
+  filtered_data <- data %>%
+    filter(
+      !( (is.na(day) | Day == day) &  # Match Day if provided
+           (is.na(activity) | Activity == activity) &  # Match Activity if provided
+           (is.na(topic) | Topic == topic) )  # Match Topic if provided
+    )
+  
+  # Check if any rows were removed
+  if (nrow(filtered_data) == nrow(data)) {
+    message("No matching activities found to remove.")
+  } else {
+    message("Activities removed.")
+  }
+  
+  return(filtered_data)
 }
 

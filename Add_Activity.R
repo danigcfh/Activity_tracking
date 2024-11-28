@@ -1,52 +1,58 @@
 library(tidyverse)
 library(readxl)
 library(writexl)
+#This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0
+
 
 #Load data
 Activities <- read_excel("Activities.xlsx")
+View(Activities)
 
-#current topics: "Self-care"     "House"         "Administratif" "Thèse"        
-# "Cours"         "Others"        "FEI"         "AppDevelopment"     
+#current topics: "Self-care"      "House"          "Administratif" 
+# "PhD Work"       "Others"         "FEI"         "AppDevelopment"    
+
+#Current sub-categories:  "Thèse" "Cours"
 
 new_data <- add_activity(data = Activities,
-                         topic = c("Administratif",
+                         day = Sys.Date()-1,
+                         topic = c("Others",
+                                   "Administratif",
+                                   "AppDevelopment",
+                                   "PhD Work",
+                                   "PhD Work",
+                                   "PhD Work",
+                                   "PhD Work",
+                                   "Others",
                                    "House",
-                                   "House",
-                                   "House",
-                                   "AppDevelopment",
-                                   "AppDevelopment",
-                                   "AppDevelopment",
-                                   "AppDevelopment",
-                                   "AppDevelopment",
-                                   "AppDevelopment"),
-                         activity = c("Appointments and train reservation",
-                           "Groceries",
-                           "Plant upkeep",
-                           "Cook",
-                           "Conditional access to other tabs and Create initial tab ",
-                           "Create reactive buttons for both downloading blank templates and uploading relevant files",
-                           "Debug uploaded files: ensure column and type consistency accross files ",
-                           "create reactive Uis and personalize data input options",
-                           "Ensure date consistency acroos files ",
-                           "create reactive button for updating files or downloading raw data"
+                                   "Administratif"
+                                   ),
+                         activity = c("Train to Paris",
+                           "Budgeting for the month",
+                           "Pass to do list to r",
+                           "Lecture Guerre Culturelle, Guerre de Mots et recherche bibliographique associée",
+                           "Vie labo: échanges avec les autres doctorants",
+                           "Give class panorama SIC",
+                           "Update class files",
+                           "Train back",
+                           "House chores: dishes, mail",
+                           "email"
                            ), 
-                         difficulty = c(1,3,2,2,3,4,4,4,2,3),
-                         Sub_category_1 = c(NA,NA,NA, NA, "Personnal project",
-                                            "Personnal project",
-                                            "Personnal project","Personnal project",
-                                            "Personnal project","Personnal project"
+                         difficulty = c(2,1,3,2,1,5,1,2,2,2),
+                         Sub_category_1 = c(NA,NA,
+                                            NA,"Thèse","Thèse", "Cours",  "Cours",
+                                            NA,NA, NA
                                             )
                          )
 
 
-new_data$Sub_Category_1[new_data$Sub_Category_1=="Personnal project"] <- NA
-
+View(new_data)
 #Difficulty scale
 # 5: Tasks that are mentally or physically exhausting, requiring extreme concentration, effort, or time
 # 4: Challenging: demand significant concentration, time, or physical energy
 # 3: Moderate: require a balanced amount of focus, mental effort, or time
 # 2: light effort: straightforward but may demand some cognitive or physical investment
 # 1: Minimal effort required
+
 
 # Export the dataframe to an Excel file
 write_xlsx(new_data, "Activities.xlsx")

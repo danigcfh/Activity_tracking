@@ -2,21 +2,22 @@ library(tidyverse)
 library(readxl)
 library(writexl)
 
+#This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0
+
+
 # Load data
 Activities <- read_excel("Activities.xlsx")
 Per_day <- read_excel("Day_Analytics.xlsx")
-Mood <- read_excel("Mood.xlsx")
+
 
 # Ensure date coherence  day 
 
 Activities$Day <- as.Date(Activities$Day, format = "%d/%m/%Y")
 Per_day$Day <- as.Date(Per_day$Day, format = "%d/%m/%Y")
-Mood$Day <- as.Date(Mood$Day, format = "%d/%m/%Y")
 
 #avoid duplicates
 Per_day <- Per_day %>% distinct()
 Activities <- Activities %>% distinct()
-Mood <- Mood %>% distinct()
 
 # Exclude old data explicitly
 # Identify days with added or changed activities
@@ -36,15 +37,10 @@ affected_activity_days <- Activities %>%
   pull(Day)
 
 # Identify days with new or updated mood data
-affected_mood_days <- Mood %>%
-  left_join(Per_day, by = "Day", suffix = c("_Mood", "_PerDay")) %>%
-  filter(
-    is.na(Sleep_Mood) != is.na(Sleep_PerDay) | Sleep_Mood != Sleep_PerDay |
-      is.na(Anxiety_Mood) != is.na(Anxiety_PerDay) | Anxiety_Mood != Anxiety_PerDay |
-      is.na(Mood_Mood) != is.na(Mood_PerDay) | Mood_Mood != Mood_PerDay |
-      is.na(Comment_Mood) != is.na(Comment_PerDay) | Comment_Mood != Comment_PerDay
-  ) %>%
+affected_mood_days <- Per_day %>%
+  filter(Needs_Update) %>%
   pull(Day)
+
 
 # Combine all affected dates
 days <- unique(c(affected_activity_days, affected_mood_days))
@@ -52,7 +48,7 @@ days <- unique(c(affected_activity_days, affected_mood_days))
 
 # Subset activities for the identified days
 new_activity <- subset(Activities, Day %in% days)
-new_mood <- subset(Mood, Day %in% days)
+new_mood <- subset(Per_day, Day %in% days)
 
 
 # Create an empty data frame for results
@@ -66,11 +62,14 @@ results <- data.frame(
   Mood = numeric(),
   Health = numeric(),
   Sleep = numeric(),
+  Exercise_Low = numeric(),# in minutes
+  Exercise_High= numeric(),
   Exercise_weighted = numeric(),
   Main_topic = character(),
   Main_topic_Activities = numeric(),
   Aggregated_difficulty = numeric(),
   Comment = character(),
+  Needs_Update = logical(),
   stringsAsFactors = FALSE
 )
 
@@ -92,16 +91,18 @@ for (day in days) {
   Sleep <- ifelse(nrow(mood_day) > 0, mood_day$Sleep, NA)
   Comment <- ifelse(nrow(mood_day) > 0, mood_day$Comment, NA)
   
+  #Retrieve exercise data
+  Exercise_Low <- ifelse(nrow(mood_day) > 0, mood_day$Exercise_Low, NA)
+  Exercise_High <- ifelse(nrow(mood_day) > 0, mood_day$Exercise_High, NA)
+  Exercise <- ifelse(nrow(mood_day) > 0, mood_day$Exercise_weighted, NA)
+  
   #Calculate weighted difficulty
   Difficulty_calcs <- weighted_sum(Difficulties, Sleep, Mood, Health)
   
   Base_difficulty <-  Difficulty_calcs[1]
   Factor_difficulty <-  Difficulty_calcs[2]
   Weighted_difficulty <-  Difficulty_calcs[3]
-  
-  # Check for "Exercise" in activities
-  Exercise <- ifelse(!is.na(mood_day$Exercise), ifelse(mood_day$Exercise_Intensity == "High", mood_day$Exercise*2, mood_day$Exercise), NA)
-  
+
   # Identify main topic
   topics <- unique(activity_day$Topic)
   
@@ -130,11 +131,14 @@ for (day in days) {
     Mood = Mood,
     Sleep = Sleep,
     Health = Health,
+    Exercise_Low = Exercise_Low,
+    Exercise_High= Exercise_High,
     Exercise_weighted = Exercise,
     Main_topic = Main_topic,
     Main_topic_Activities = Main_topic_Activities,
     Aggregated_difficulty = Aggregated_difficulty,
     Comment = Comment,
+    Needs_Update = FALSE,
     stringsAsFactors = FALSE
   )
   

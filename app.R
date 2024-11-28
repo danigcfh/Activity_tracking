@@ -9,7 +9,7 @@ library(writexl)
 library(bslib)
 library(shinyBS)
 
-
+#This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0
 
 # Helper functions (Assume add_activity and add_mood are defined in Functions.R)
 source("Functions.R")
@@ -25,9 +25,9 @@ ui <- navbarPage(
                h4("Upload Required Files"),
                fileInput("activities_file", "Upload Activities File", 
                          accept = c(".xlsx")),
-               fileInput("mood_file", "Upload Mood File", 
-                         accept = c(".xlsx")),
                fileInput("Day_Analytics", "Upload Daily Summary File", 
+                         accept = c(".xlsx")),
+               fileInput("To_do", "Upload To Do List File", 
                          accept = c(".xlsx")),
                actionButton("submit_files", "Submit Files"),
                div(id = "file_notice", style = "color: red; font-weight: bold;")  # Placeholder for custom notification
@@ -42,7 +42,7 @@ ui <- navbarPage(
   ),
   
   # Add conditional access to other tabs
-  tabPanel("Add Data", value = "add_data", uiOutput("add_data_ui")),
+  tabPanel("Manage Data", value = "add_data", uiOutput("add_data_ui")),
   tabPanel("Raw Data", value = "raw_data", uiOutput("raw_data_ui")),
   tabPanel("Summary", value = "summary", uiOutput("summary_ui"))
 )
@@ -52,11 +52,11 @@ server <- function(input, output, session) {
   # Reactive values to track upload status and file paths
   upload_status <- reactiveValues(
     activities_uploaded = FALSE,
-    mood_uploaded = FALSE,
     day_analytics_uploaded = FALSE,
     activities_path = NULL,
-    mood_path = NULL,
-    day_analytics_path = NULL
+    day_analytics_path = NULL,
+    To_do_uploaded = FALSE,
+    To_do_path = NULL
   )
   # Default DataFrames
   default_activities_df <- data.frame(
@@ -66,18 +66,6 @@ server <- function(input, output, session) {
     Difficulty = numeric(),
     Sub_Category_1 = character(),
     Sub_Category_2 = character(),
-    Comment = character(),
-    stringsAsFactors = FALSE
-  )
-  
-  default_mood_df <- data.frame(
-    Day = as.Date(character(), format = "%Y-%m-%d"),
-    Sleep = numeric(),
-    Anxiety = numeric(),
-    Mood = numeric(),
-    Health = numeric(),
-    Exercise = numeric(),
-    Exercise_Intensity = character(),
     Comment = character(),
     stringsAsFactors = FALSE
   )
@@ -92,13 +80,35 @@ server <- function(input, output, session) {
     Mood = numeric(),
     Health = numeric(),
     Sleep = numeric(),
+    Exercise_Low = numeric(),
+    Exercise_High= numeric(),
     Exercise_weighted = numeric(),
     Main_topic = character(),
     Main_topic_Activities = numeric(),
     Aggregated_difficulty = numeric(),
     Comment = character(),
+    Needs_Update = logical(),
     stringsAsFactors = FALSE
   )
+  
+  default_to_do_df <- data.frame(
+    Last_updated = numeric() ,
+    Due_date = numeric(),
+    Recommended_date = numeric(),
+    Topic = character(),
+    Activity = character(),
+    Difficulty = numeric(),
+    Estimated_time = numeric(),
+    Importance = numeric(),
+    Dependencies = logical(),
+    Urgency = numeric(),
+    Priority = numeric(),
+    Sub_category_1 = character(),
+    Sub_category_2 = character(),
+    Comment = character(),
+    stringsAsFactors = FALSE
+  )
+  
   
   # Reactive value to store file details
   file_info <- reactiveVal(list())
@@ -115,19 +125,19 @@ server <- function(input, output, session) {
       
       # Define paths for each file within the temporary directory
       activities_path <- file.path(temp_dir, "Activities.xlsx")
-      mood_path <- file.path(temp_dir, "Mood.xlsx")
       day_analytics_path <- file.path(temp_dir, "Day_Analytics.xlsx")
+      to_do_path <- file.path(temp_dir, "To_do.xlsx")
       
       # Write the default data to temporary files
       write_xlsx(default_activities_df, activities_path)
-      write_xlsx(default_mood_df, mood_path)
       write_xlsx(default_day_analytics_df, day_analytics_path)
+      write_xlsx(default_to_do_df, to_do_path)
       
       # Create the ZIP file without directory paths
       old_dir <- setwd(temp_dir)  # Change working directory to the temp directory
       on.exit(setwd(old_dir))    # Ensure we revert to the original directory after
       
-      zip(file, c("Activities.xlsx", "Mood.xlsx", "Day_Analytics.xlsx"))  # Use file names only
+      zip(file, c("Activities.xlsx", "Day_Analytics.xlsx"))  # Use file names only
     }
   )
   
@@ -147,12 +157,6 @@ server <- function(input, output, session) {
     showNotification("Activities file uploaded successfully!", type = "message")
   })
   
-  observeEvent(input$mood_file, {
-    req(input$mood_file)
-    upload_status$mood_uploaded <- TRUE
-    upload_status$mood_path <- input$mood_file$datapath
-    showNotification("Mood file uploaded successfully!", type = "message")
-  })
   
   # Monitor file uploads
   observeEvent(input$Day_Analytics, {
@@ -161,13 +165,20 @@ server <- function(input, output, session) {
     upload_status$day_analytics_path <- input$Day_Analytics$datapath
     showNotification("Daily Summary file uploaded successfully!", type = "message")
   })
+  # Monitor file uploads
+  observeEvent(input$To_do, {
+    req(input$To_do)
+    upload_status$To_do_uploaded <- TRUE
+    upload_status$To_do_path <- input$To_do$datapath
+    showNotification("To do list uploaded successfully!", type = "message")
+  })
   
   # Capture file paths when files are uploaded
   observeEvent(input$submit_files, {
     # Read the uploaded files
     activities_file <- readxl::read_xlsx(input$activities_file$datapath)
-    moods_file <- readxl::read_xlsx(input$mood_file$datapath)
     day_analytics_file <- readxl::read_xlsx(input$Day_Analytics$datapath)
+    To_do_file <- readxl::read_xlsx(input$To_do$datapath)
     
     # Function to check if a data frame has the correct columns and types
     check_file_compatibility <- function(df, default_df) {
@@ -195,16 +206,16 @@ server <- function(input, output, session) {
     
     # Check compatibility for each file
     activities_check <- check_file_compatibility(activities_file, default_activities_df)
-    moods_check <- check_file_compatibility(moods_file, default_mood_df)
     day_analytics_check <- check_file_compatibility(day_analytics_file, default_day_analytics_df)
+    To_do_check <- check_file_compatibility(To_do_file, default_to_do_df)
     
     # If any file has issues, show an error message
     if (!is.null(activities_check)) {
       showNotification(paste("Activities file error: ", activities_check), type = "error")
-    } else if (!is.null(moods_check)) {
-      showNotification(paste("Moods file error: ", moods_check), type = "error")
     } else if (!is.null(day_analytics_check)) {
       showNotification(paste("Day Analytics file error: ", day_analytics_check), type = "error")
+    } else if (!is.null(To_do_check)) {
+      showNotification(paste("Day Analytics file error: ", To_do_check), type = "error")
     } else {
       # Store file details (temporary paths and original names)
       file_info(list(
@@ -212,13 +223,13 @@ server <- function(input, output, session) {
           path = input$activities_file$datapath,
           name = input$activities_file$name
         ),
-        moods = list(
-          path = input$mood_file$datapath,
-          name = input$mood_file$name
-        ),
         day_analytics = list(
           path = input$Day_Analytics$datapath,
           name = input$Day_Analytics$name
+        ),
+        to_do = list(
+          path = input$To_do$datapath,
+          name = input$To_do$name
         )
       )
       )
@@ -267,31 +278,6 @@ server <- function(input, output, session) {
     activities(activities_data())
   })
   
-  moods_data <- reactive({
-    req(upload_status$mood_path)
-    tryCatch({
-      raw_data <- read_excel(upload_status$mood_path)
-      validate(
-        need("Day" %in% colnames(raw_data), "'Day' column is missing.")
-      )
-      raw_data <- raw_data %>% mutate(Day = as.Date(Day, format = "%Y-%m-%d"))
-      enforce_column_classes(raw_data, default_mood_df)
-    }, error = function(e) {
-      showNotification(paste("Error reading Mood file:", e$message), type = "error")
-      return(default_mood_df)
-    })
-  })
-  
-  
-  # Define a reactiveVal for the editable activities
-  moods <- reactiveVal()
-  
-  # Initialize the reactiveVal with the loaded data when the app starts
-  observe({
-    moods(moods_data())
-  })
-  
-  
   per_day_data <- reactive({
     req(upload_status$day_analytics_path)
     tryCatch({
@@ -317,80 +303,194 @@ server <- function(input, output, session) {
   })
   
   # Global initialization for topics and sub-categories
-  topics <- c("No predefined categories", "Other (Add new)")
-  sub_cat1 <- c("No predefined categories", "Other (Add new)")
-  sub_cat2 <- c("No predefined categories", "Other (Add new)")
+  topics <- c("None", "Other (Add new)")
+  sub_cat1 <- c("None", "Other (Add new)")
+  sub_cat2 <- c("None", "Other (Add new)")
   
   # UI for conditional tabs
   output$add_data_ui <- renderUI({
-    if (!is.null(activities()) && nrow(activities()) > 0) {
-      # Get unique topics and sub-categories from activities() if it is not empty
-      topics <<- unique(activities()$Topic)
-      sub_cat1 <<- unique(activities()$Sub_Category1)
-      sub_cat2 <<- unique(activities()$Sub_Category2)
-    }
-    # Add the "Other (Add new)" option to topics and sub-categories
-    topics <<- c(topics, "Other (Add new)", "No predefined categories")
-    sub_cat1 <<- c(sub_cat1, "Other (Add new)", "No predefined categories")
-    sub_cat2 <<- c(sub_cat2, "Other (Add new)", "No predefined categories")
+    # Ensure topics and subcategories have default values if activities() is NULL
+    topics <- c("None")
+    sub_cat1 <- c("None")
+    sub_cat2 <- c("None")
     
+    if (!is.null(activities()) && nrow(activities()) > 0) {
+      # Populate topics and subcategories dynamically
+      topics <- unique(activities()$Topic)
+      sub_cat1 <- unique(activities()$Sub_Category_1)
+      sub_cat2 <- unique(activities()$Sub_Category_2)
+    }
+    
+    # Add "Other (Add new)" and "None" options
+    topics <- c(topics, "Other (Add new)", "None")
+    sub_cat1 <- c(sub_cat1, "Other (Add new)", "None")
+    sub_cat2 <- c(sub_cat2, "Other (Add new)", "None")
+    
+    # Define the UI layout with tabs
     sidebarLayout(
-      mainPanel(
-        fluidRow(
-          # Left Column: Add Activity
-          column(6,
-                 h4("Add Activity"),
-                 dateInput("date", "Date:", value = Sys.Date()),
-                 selectInput("topic", "Topic:", choices = topics),
-                 textInput("activity", "Activity:"),
-                 sliderInput("difficulty", "Difficulty:", min = 1, max = 5, value = 3),
-                 selectInput("sub_cat1", "Sub-Category 1:", choices = sub_cat1, selected = "No predefined categories"),
-                 selectInput("sub_cat2", "Sub-Category 2:", choices = sub_cat2, selected = "No predefined categories"),
-                 textAreaInput("comment", "Comments:"),
-                 actionButton("add_activity", "Add Activity")
-          ),
-          # Right Column: Add Mood
-          column(6,
-                 h4("Add daily evaluation"),
-                 dateInput("mood_date", "Date:", value = Sys.Date()),
-                 
-                 # Sleep Input and Help Button
-                 fluidRow(
-                   column(10, sliderInput("sleep", "Sleep:", min = -1, max = 5, value = 2)),
-                   column(2, actionButton("help_sleep", "?", class = "btn-info btn-sm"))
-                 ),
-                 
-                 # Anxiety Input and Help Button
-                 fluidRow(
-                   column(10, sliderInput("anxiety", "Anxiety:", min = 1, max = 5, value = 2)),
-                   column(2, actionButton("help_anxiety", "?", class = "btn-info btn-sm"))
-                 ),
-                 
-                 # Mood Input and Help Button
-                 fluidRow(
-                   column(10, sliderInput("mood", "Mood:", min = -5, max = 5, value = 0)),
-                   column(2, actionButton("help_mood", "?", class = "btn-info btn-sm"))
-                 ),
-                 
-                 # Health Input and Help Button
-                 fluidRow(
-                   column(10, sliderInput("health", "Health:", min = -5, max = 1, value = 0)),
-                   column(2, actionButton("help_health", "?", class = "btn-info btn-sm"))
-                 ),
-                 
-                 numericInput("exercise", "Exercise Duration (minutes):", value = 0),
-                 selectInput("exercise_intensity", "Exercise Intensity:", c("Low", "High")),
-                 textAreaInput("mood_comment", "Comments:"),
-                 actionButton("add_mood", "Add Mood")
-          )
-        )
-      ),
       sidebarPanel(
         h4("Add your activity or daily evaluation data using the forms."),
         actionButton("update_files", "Update Files")
+      ),
+      mainPanel(
+        tabsetPanel(id = "add_data",
+                    # Tab 1: Add Activity
+                    tabPanel("Add Activity",
+                             fluidRow(
+                               column(6,
+                                      h4("Add Activity"),
+                                      dateInput("date", "Date:", value = Sys.Date()),
+                                      selectInput("topic", "Topic:", choices = topics),
+                                      textInput("activity", "Activity:"),
+                                      fluidRow(
+                                        column(10, sliderInput("difficulty", "Difficulty:", min = 1, max = 5, value = 3),
+                                               column(2, actionButton("help_difficulty", "?", class = "btn-info btn-sm"))
+                                        )),                                      selectInput("sub_cat1", "Sub-Category 1:", choices = sub_cat1, selected = "None"),
+                                      selectInput("sub_cat2", "Sub-Category 2:", choices = sub_cat2, selected = "None"),
+                                      textAreaInput("comment", "Comments:"),
+                                      actionButton("add_activity", "Add Activity")
+                               ),
+                               column(6,
+                                      h4("Delete Activity"),
+                                      selectInput("delete_activity_date", "Select Date:", choices = unique(activities()$Day)),
+                                      selectInput("delete_activity_topic", "Select Topic:", choices = NULL), # Empty initially
+                                      selectInput("delete_activity_name", "Select Activity:", choices = NULL), # Empty initially
+                                      actionButton("delete_activity", "Delete Activity")
+                               )
+                             )
+                    ),
+                    # Tab 2: Add Mood
+                    tabPanel("Add Daily Evaluation",
+                             fluidRow(
+                               column(6,
+                                      h4("Add Daily Evaluation"),
+                                      dateInput("mood_date", "Date:", value = Sys.Date()),
+                                      fluidRow(
+                                        column(10, sliderInput("sleep", "Sleep:", min = -1, max = 5, value = 2)),
+                                        column(2, actionButton("help_sleep", "?", class = "btn-info btn-sm"))
+                                      ),
+                                      fluidRow(
+                                        column(10, sliderInput("anxiety", "Anxiety:", min = 1, max = 5, value = 2)),
+                                        column(2, actionButton("help_anxiety", "?", class = "btn-info btn-sm"))
+                                      ),
+                                      fluidRow(
+                                        column(10, sliderInput("mood", "Mood:", min = -5, max = 5, value = 0)),
+                                        column(2, actionButton("help_mood", "?", class = "btn-info btn-sm"))
+                                      ),
+                                      fluidRow(
+                                        column(10, sliderInput("health", "Health:", min = -5, max = 1, value = 0)),
+                                        column(2, actionButton("help_health", "?", class = "btn-info btn-sm"))
+                                      ),
+                                      numericInput("exercise_low", "Exercise Low Intensity (minutes):", value = 0),
+                                      numericInput("exercise_high", "Exercise High Intensity (minutes):", value = 0),
+                                      textAreaInput("mood_comment", "Comments:"),
+                                      actionButton("add_mood", "Add Daily Update")
+                               ),
+                               column(6,
+                                      h4("Delete Daily Evaluation"),
+                                      selectInput("delete_mood_date", "Select Date:", choices = unique(activities()$Day)),
+                                      actionButton("delete_mood", "Delete Evaluation")
+                               )
+                             )
+                    ),
+                    # Tab 3: Manage To-Do List
+                    tabPanel("Manage to do list",
+                             fluidRow(
+                               column(6,
+                                      h4("Add Activity to To-Do"),
+                                      dateInput("due_date", "Due Date:", value = Sys.Date()),
+                                      selectInput("topic", "Topic:", choices = topics),
+                                      textInput("activity", "Activity:"),
+                                      fluidRow(
+                                        column(10, sliderInput("difficulty", "Difficulty:", min = 1, max = 5, value = 3),
+                                        column(2, actionButton("help_difficulty", "?", class = "btn-info btn-sm"))
+                                      ),
+                                      sliderInput("estimated_time", "Estimated Time (hours):", min = 0.5, max = 8, value = 3, step = 0.5),
+                                      fluidRow(
+                                        column(10, sliderInput("importance", "Importance:", min = 1, max = 5, value = 3),
+                                               column(2, actionButton("help_importance", "?", class = "btn-info btn-sm"))
+                                        )),
+                                      fluidRow(
+                                        column(10,selectInput("dependencies", "Dependencies:", choices = c("Yes", "No"), selected = "No"),
+                                               column(2, actionButton("help_dependencies", "?", class = "btn-info btn-sm"))
+                                        )),
+                                      selectInput("sub_cat1", "Sub-Category 1:", choices = sub_cat1, selected = "None"),
+                                      selectInput("sub_cat2", "Sub-Category 2:", choices = sub_cat2, selected = "None"),
+                                      textAreaInput("comment", "Comments:"),
+                                      actionButton("add_to_do", "Add To-Do")
+                               )),
+                               column(6,
+                                      h4("Mark Task as Done"),
+                                      selectInput("done_activity_date", "Select Date:", choices = unique(activities()$Day)),
+                                      selectInput("done_activity_topic", "Select Topic:", choices = NULL), # Empty initially
+                                      selectInput("done_activity_name", "Select Activity:", choices = NULL), # Empty initially
+                                      actionButton("done_activity", "Mark as Done")
+                               ),
+                               column(6,
+                                      h4("Delete Activity"),
+                                      selectInput("delete_to_do_date", "Select Date:", choices = unique(activities()$Day)),
+                                      selectInput("delete_ato_do_topic", "Select Topic:", choices = NULL), # Empty initially
+                                      selectInput("delete_to_do_name", "Select Activity:", choices = NULL), # Empty initially
+                                      actionButton("delete_to_do_activity", "Delete Activity from to do list")
+                               )
+                             )
+                    )
+        )
       )
     )
   })
+  
+  # Server-side logic for updating the delete activity input based on the selected date
+  observeEvent(input$delete_activity_date, {
+    date_selected <- input$delete_activity_date
+    if (!is.null(date_selected)) {
+      # Filter activities for the selected date
+      topics_for_date <- activities() %>% filter(Day == date_selected)
+      
+      # Update the 'delete_activity_name' choices based on the filtered activities
+      updateSelectInput(session, "delete_activity_name", choices = topics_for_date$Topic)
+    }
+  })
+  
+  observeEvent(input$delete_activity_topic, {
+    date_selected <- input$delete_activity_date
+    topic_selected <- input$delete_activity_topic
+    if (!is.null(topic_selected)) {
+      # Filter activities for the selected date
+      activities_for_date <- activities() %>% filter(Day == date_selected & Topic == topic_selected)
+      
+      # Update the 'delete_activity_name' choices based on the filtered activities
+      updateSelectInput(session, "delete_activity_name", choices = activities_for_date$Activities)
+    }
+  })
+  
+  # Server-side logic for deleting an activity
+  observeEvent(input$delete_activity, {
+    # Get the inputs
+    date_selected <- input$delete_activity_date
+    topic_selected <- input$delete_activity_topic
+    activity_name <- input$delete_activity_name
+    
+    # Ensure all inputs are provided
+    if (is.null(date_selected) || is.null(topic_selected) || is.null(activity_name)) {
+      showNotification("Please select a date, topic, and activity to delete.", type = "error")
+      return()
+    }
+    
+    # Access the current activities dataset
+    current_activities <- activities()
+    
+    # Filter out the activity to be deleted
+    updated_activities <- current_activities %>%
+      filter(!(Day == date_selected & Topic == topic_selected & Activities == activity_name))
+    
+    # Update the reactive variable
+    activities(updated_activities)
+    
+    # Provide user feedback
+    showNotification(paste("Deleted activity:", activity_name, "on", date_selected), type = "message")
+  })
+  
   # Modal for Sleep Scale
   observeEvent(input$help_sleep, {
     showModal(modalDialog(
@@ -460,6 +560,51 @@ server <- function(input, output, session) {
     ))
   })
   
+  # Modal for dependencies
+  
+  observeEvent(input$help_dependencies, {
+    showModal(modalDialog(
+      title = "Dependencies Description",
+      tags$ul(
+        tags$li("Yes: other activities depend on this task being completed"),
+        tags$li("No: other tasks do not depend on this task being completed"),
+      ),
+      easyClose = TRUE
+    ))
+  })
+  
+  
+  # Modal for difficulty
+  observeEvent(input$help_importance, {
+    showModal(modalDialog(
+      title = "Importance Scale Description",
+      tags$ul(
+        tags$li("1: minimal impact on goals or responsabilities"),
+        tags$li("2: low impact, relevant but not directly tied to goals"),
+        tags$li("3: Moderate, not critical in the short term and/or routine, needed for smooth functioning"),
+        tags$li("4: High impact:  for achieving significant goals or maintaining key commitments."),
+        tags$li("5:Critical impact: essential and tied directly to major goals, responsibilities, or deadlines, could lead to important consequences"),
+      ),
+      easyClose = TRUE
+    ))
+  })
+
+  # Modal for difficulty
+  
+  observeEvent(input$help_difficulty, {
+    showModal(modalDialog(
+      title = "Difficulty Scale Description",
+      tags$ul(
+        tags$li("1: Minimal effort required"),
+        tags$li("2: light effort: straightforward but may demand some cognitive or physical investment"),
+        tags$li("3: Moderate: require a balanced amount of focus, mental effort, or time"),
+        tags$li("4: Challenging: demand significant concentration, time, or physical energy"),
+        tags$li("5: Tasks that are mentally or physically exhausting, requiring extreme concentration, effort, or time"),
+      ),
+      easyClose = TRUE
+    ))
+  })
+  
   # Observe event when the user selects "Other (Add new)" for Topic
   observeEvent(input$topic, {
     if (input$topic == "Other (Add new)") {
@@ -471,7 +616,7 @@ server <- function(input, output, session) {
           actionButton("save_new_topic", "Save")
         )
       ))
-    } else if (input$topic == "No predefined categories") {
+    } else if (input$topic == "None") {
       # Automatically set Topic to NA when "No predefined categories" is selected
       updateSelectInput(session, "topic", selected = "")
     }
@@ -497,7 +642,7 @@ server <- function(input, output, session) {
           actionButton("save_new_sub_cat1", "Save")
         )
       ))
-    } else if (input$sub_cat1 == "No predefined categories") {
+    } else if (input$sub_cat1 == "None") {
       # Automatically set Sub-Category 1 to NA when "No predefined categories" is selected
       updateSelectInput(session, "sub_cat1", selected = "")
     }
@@ -514,7 +659,7 @@ server <- function(input, output, session) {
           actionButton("save_new_sub_cat2", "Save")
         )
       ))
-    } else if (input$sub_cat2 == "No predefined categories") {
+    } else if (input$sub_cat2 == "None") {
       # Automatically set Sub-Category 2 to NA when "No predefined categories" is selected
       updateSelectInput(session, "sub_cat2", selected = "")
     }
@@ -592,11 +737,6 @@ server <- function(input, output, session) {
             tabPanel("Activities", DTOutput("activities_table")),
             tabPanel("Daily Summary", DTOutput("summary_table"))
           ),
-          # Debug outputs
-          verbatimTextOutput("debug_summary_data"),  # To show data structure or sample
-          verbatimTextOutput("debug_structure"),
-          verbatimTextOutput("date_range_start"),
-          verbatimTextOutput("date_range_end")
           
         )
       )
@@ -651,17 +791,17 @@ server <- function(input, output, session) {
   # Add mood
   observeEvent(input$add_mood, {
     new_data <- add_mood(
-      data = moods(),
+      data = per_day(),
       day = as.Date(input$mood_date, format = "%Y-%m-%d"),
       sleep = input$sleep,
       anxiety = input$anxiety,
       mood = input$mood,
       health = input$health,
-      exercise = input$exercise,
-      exercise_intensity = input$exercise_intensity,
+      exercise_low = input$exercise_low,
+      exercise_high = input$exercise_high,
       comment = input$mood_comment
     )
-    moods(new_data)
+    per_day(new_data)
     showNotification("Daily evaluation added successfully!", type = "message")
   })
   
@@ -669,23 +809,15 @@ server <- function(input, output, session) {
   # Reactive processing logic for final results
   final_results <- reactive({
     Activities <- activities()
-    Mood <- moods()
     Per_day <- per_day()
     
     # Ensure date coherence
     Activities$Day <- as.Date(Activities$Day, format = "%Y-%m-%d")
-    Mood$Day <- as.Date(Mood$Day, format = "%Y-%m-%d")
     Per_day$Day <- as.Date(Per_day$Day, format = "%Y-%m-%d")
     
     # Avoid duplicates
     Activities <- distinct(Activities)
-    Mood <- distinct(Mood)
     Per_day <- distinct(Per_day)
-    
-    # Ensure date is handled properly
-    print(str(Activities$Day))
-    print(str(Mood$Day))
-    print(str(Per_day$Day))
     
     # Identify days with new or updated activities and moods
     activity_number <- Activities %>%
@@ -699,14 +831,9 @@ server <- function(input, output, session) {
       filter(is.na(Activities) | Activities_count != Activities) %>%
       pull(Day)
     
-    affected_mood_days <- Mood %>%
-      left_join(Per_day, by = "Day", suffix = c("_Mood", "_PerDay")) %>%
-      filter(
-        is.na(Sleep_Mood) != is.na(Sleep_PerDay) | Sleep_Mood != Sleep_PerDay |
-          is.na(Anxiety_Mood) != is.na(Anxiety_PerDay) | Anxiety_Mood != Anxiety_PerDay |
-          is.na(Mood_Mood) != is.na(Mood_PerDay) | Mood_Mood != Mood_PerDay |
-          is.na(Comment_Mood) != is.na(Comment_PerDay) | Comment_Mood != Comment_PerDay
-      ) %>%
+    # Identify days with new or updated mood data
+    affected_mood_days <- Per_day %>%
+      filter(Needs_Update) %>%
       pull(Day)
     
     # Combine affected days
@@ -727,6 +854,8 @@ server <- function(input, output, session) {
       Mood = numeric(),
       Health = numeric(),
       Sleep = numeric(),
+      Exercise_Low = numeric(),# in minutes
+      Exercise_High= numeric(),
       Exercise_weighted = numeric(),
       Main_topic = character(),
       Main_topic_Activities = numeric(),
@@ -738,7 +867,7 @@ server <- function(input, output, session) {
     # Iterate over each affected day and calculate the metrics
     for (day in days) {
       activity_day <- subset(new_activity, Day == day)
-      mood_day <- subset(new_mood, Day == day)
+      mood_day <- Per_day %>% filter(Day == day)
       
       # Check if mood_day is empty and assign NA if true
       if (nrow(mood_day) == 0) {
@@ -747,6 +876,8 @@ server <- function(input, output, session) {
         Health <- NA
         Sleep <- NA
         Comment <- NA
+        Exercise_Low <- NA
+        Exercise_High <- NA
         Exercise <- NA
       } else {
         # Extract and calculate metrics for non-empty mood_day
@@ -754,6 +885,9 @@ server <- function(input, output, session) {
         Mood <- mood_day$Mood
         Health <- mood_day$Health
         Sleep <- mood_day$Sleep
+        Exercise_Low <-  mood_day$Exercise_Low
+        Exercise_High <- mood_day$Exercise_High
+        Exercise <- ifelse(mood_day$Exercise_weighted < 1, NA, mood_day$Exercise_weighted)
         Comment <- mood_day$Comment
       }
       
@@ -768,7 +902,7 @@ server <- function(input, output, session) {
       Factor_difficulty <- Difficulty_calcs[2]
       Weighted_difficulty <- Difficulty_calcs[3]
       
-      Exercise <- ifelse(!nrow(mood_day) == 0, ifelse(mood_day$Exercise_Intensity == "High", mood_day$Exercise*2, mood_day$Exercise), NA)
+  
       
       # Identify the main topic
       topic_summary <- activity_day %>%
@@ -794,16 +928,21 @@ server <- function(input, output, session) {
         Mood = Mood,
         Health = Health,
         Sleep = Sleep,
+        Exercise_Low = Exercise_Low,# in minutes
+        Exercise_High= Exercise_High,
         Exercise_weighted = Exercise,
         Main_topic = Main_topic,
         Main_topic_Activities = Main_topic_Activities,
         Aggregated_difficulty = Aggregated_difficulty,
         Comment = Comment,
+        Needs_Update = FALSE,
         stringsAsFactors = FALSE
       )
       
       results <- bind_rows(results, row)
     }
+    non_affected_mood <- subset(Per_day, !Day %in% days)
+    results <- bind_rows(non_affected_mood, results)
     
     # Return the results
     return(results)
@@ -817,7 +956,6 @@ server <- function(input, output, session) {
       footer = NULL,  # Remove footer (optional)
       tagList(
         actionButton("update_activities", "Update Activities File"),
-        actionButton("update_moods", "Update Mood File"),
         actionButton("update_day_analytics", "Update Day Analytics File")
       )
     ))
@@ -834,19 +972,7 @@ server <- function(input, output, session) {
       showNotification("No file selected for Activities! Please choose a file.", type = "error")
     }
   })
-  
-  observeEvent(input$update_moods, {
-    # Choose file for moods
-    moods_path <- file.choose()
-    if (moods_path != "") {
-      write_xlsx(moods(), moods_path)
-      showNotification("Mood file updated successfully!", type = "message")
-      removeModal()  # Close the modal after selecting the file
-    } else {
-      showNotification("No file selected for Mood! Please choose a file.", type = "error")
-    }
-  })
-  
+
   observeEvent(input$update_day_analytics, {
     # Choose file for day analytics
     day_analytics_path <- file.choose()
@@ -859,21 +985,6 @@ server <- function(input, output, session) {
     }
   })
   
-  # Inspect the data returned by final_results()
-  output$debug_summary_data <- renderPrint({
-    head(final_results())  # Print the first few rows of the data
-  })
-  output$debug_structure <- renderPrint({
-    str(final_results())  # Shows structure of the dataset
-  })
-  output$date_range_start <- renderPrint({
-    str(as.Date(input$date_range_raw[1], format = "%Y-%m-%d"))  # Shows structure of the dataset
-  })
-  output$date_range_end <- renderPrint({
-    str(as.Date(input$date_range_raw[2], format = "%Y-%m-%d"))  # Shows structure of the dataset
-  })
-  
-
   # Define a list of custom ranges for each variable
   custom_ranges <- list(
     "Difficulty" = c(1, 5), 
@@ -1054,7 +1165,9 @@ server <- function(input, output, session) {
                          choices = c("Activities" = "Activities", 
                                      "Base Difficulty" = "Base_difficulty", 
                                      "Weighted Difficulty" = "Weighted_difficulty",
-                                     "Exercise (in minutes)" = "Exercise_weighted"),
+                                     "Exercise Low Intensity" = "Exercise_Low",
+                                     "Exercise High Intensity" = "Exercise_High",
+                                     "Exercise Weighted" = "Exercise_weighted"),
                          selected = c("Base_difficulty", "Weighted_difficulty"))
     }
   })
@@ -1119,13 +1232,11 @@ server <- function(input, output, session) {
       
       # Create .xlsx files for each data frame
       write_xlsx(activities(), file.path(temp_dir, "activities_file.xlsx"))
-      write_xlsx(moods(), file.path(temp_dir, "mood_file.xlsx"))
       write_xlsx(per_day(), file.path(temp_dir, "Day_Analytics.xlsx"))
       
       # Zip the files into a single file
       zip(file, c(
         file.path(temp_dir, "activities_file.xlsx"),
-        file.path(temp_dir, "mood_file.xlsx"),
         file.path(temp_dir, "Day_Analytics.xlsx")
       ))
     }
