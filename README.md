@@ -10,19 +10,51 @@ It's a personal initiative to track my daily activities, mood and how these thin
 You can support this project so it remains free and accessible.
 Paypal: paypal.me/DaniGCFH
 
-### Files
+
+### app.r : Integrated Activity Tracker
+  - Shiny app script for an application that summarizes everything that has been developped in this repository as a single interactive and intuitive app.
+
+
+1. **Initial tab: Upload Files**
+
+  - To use the app, create and download the template excels in the first tab. Then upload them to their relevant fields in order to manage the data. 
+  - No data is kept in the app: it allows the calculation, management and visualization of data from the uploaded excel files.
+  - *Important: do not change columns names or order in the excel files, these are needed for the app to run*
+  - Once the relevant files have been uploaded, the rest of the app will be accessible
+
+2. **Manage Data**
+  - Allows to add or delete any activity or daily evaluation from the relevant dataframes. Direct editing of existing data is not supported, if an error is made, it's possible to delete the erroneous data and then add a corrected version. 
+  - Allows to upload the new data to the original excels if desired, or to save them into a new excel. 
+
+3. **Raw Data**
+  - Displays in table form the tables of all 3 files (Activity tracking, daily evaluation and to do list)
+  - Allows filtering the data by date and within the parameters of each table.
+  - Allows access to automatically calculated values such as priority and recommended date for to do list. 
+
+4. **Summary**
+  - Displays graphic visualization to track different metrics regarding activity and mood (only for past activities stored in activities or daily analytics)
+  - Allows filtering the data by date and dynamically shows the parameters selected
+
+### Other Files
+These files worked as the base to inspire the app, a testing ground of sorts. 
+I suggest to use these scripts as a base to personalize the kind of data and functions. 
+
 1. **`Create_Files.R`**  
    Creates two Excel files:
    - `Activities.xlsx`: Tracks individual activities and their attributes.
    - `Day_Analytics.xlsx`: Summarizes daily metrics.
+   - `To_do.xlsx`: makes a to do list with activities and their attributes
+
    
 2. **`Functions.R`**  
    Defines functions for
    - Adding activity and mood to their respective excel files
    - Calculating difficulty levels in aggregate, a modulating factor from sleep, mood and health scores, and the overall weighted difficulty
+   - Calculations for priority and recommended date for tasks in to do file
+   - Adding tasks to to do file and filling missing values with calculated ones
    
-3. **`Add_Activity.R`**  
-   Updates `Activities.xlsx` by appending new rows for daily activities.
+3. **`Add_Activity.R, Add_Mood.R, Add_to_do.R`**  
+   Updates relevant excel file by adding new information using the functions described previously 
 
 4. **`Daily_Analytics.R`**  
    Processes the data in `Activities.xlsx` and `Mood.xlsx`to calculate daily metrics, including:
@@ -38,7 +70,6 @@ Paypal: paypal.me/DaniGCFH
 ### Usage
 1. **Setup**
    - Run `Create_Files.R` first to initialize the Excel files.
-   - Customize column values based on your needs.
    - Warning: this script should only run once, as the scripts created this way will be then used and updated with the following scripts
 
 2. **Initialize functions**
@@ -61,12 +92,15 @@ Paypal: paypal.me/DaniGCFH
 ```
 
 4. **Daily Analytics**
-   - Run `Daily_Analytics.R` to calculate daily summaries and export the updated `Day_Analytics.xlsx`.
+   - Fill and run `Daily_Analytics.R` to calculate daily summaries and export the updated `Day_Analytics.xlsx`.
    - The weighted metric takes into account mood, sleep, number of activities and their difficulties from both mood and activities xlsx
 
-4. **Topic Analytics**
-   - Run `Topic_Analytics.R` to calculate how many activities per topic per day are performed
+5. **Topic Analytics**
+   - Fill and run `Topic_Analytics.R` to calculate how many activities per topic per day are performed
    - The aggregated difficulty as well as any details and comments added to the activities will be summarized in the output
+
+6. **To do list**
+   - Run  `Add_to_do.R` to add new activity to the to do list.
 
 This is an ongoing project. It will probably be updated for weekly and monthly summaries in the future. 
 
