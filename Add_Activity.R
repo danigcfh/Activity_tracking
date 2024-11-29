@@ -15,32 +15,34 @@ View(Activities)
 
 new_data <- add_activity(data = Activities,
                          day = Sys.Date()-1,
-                         topic = c("Others",
+                         topic = c("AppDevelopment",
+                                   "PhD Work",
+                                   "Self-care",
                                    "Administratif",
-                                   "AppDevelopment",
                                    "PhD Work",
-                                   "PhD Work",
-                                   "PhD Work",
-                                   "PhD Work",
-                                   "Others",
                                    "House",
-                                   "Administratif"
+                                   "House",
+                                   "AppDevelopment",
+                                   "House",
+                                   "Self-care",
+                                   "House"
                                    ),
-                         activity = c("Train to Paris",
-                           "Budgeting for the month",
-                           "Pass to do list to r",
-                           "Lecture Guerre Culturelle, Guerre de Mots et recherche bibliographique associée",
-                           "Vie labo: échanges avec les autres doctorants",
-                           "Give class panorama SIC",
-                           "Update class files",
-                           "Train back",
-                           "House chores: dishes, mail",
-                           "email"
+                         activity = c("Finish defining and debugin all functions related to add_to_do ",
+                           "reunion to get personalized pedagogy support",
+                           "update diary/mood tracking",
+                           "Emails",
+                           "lab life: answer texts, get up to day with ongoing events",
+                           "install temperature regulators in greenhouse",
+                           "House maintenance: dishes, triage and remove big cardboard boxes",
+                           "Integrate to do list to UI",
+                           "Cook",
+                           "Shower",
+                           "Fold laundry"
                            ), 
-                         difficulty = c(2,1,3,2,1,5,1,2,2,2),
-                         Sub_category_1 = c(NA,NA,
-                                            NA,"Thèse","Thèse", "Cours",  "Cours",
-                                            NA,NA, NA
+                         difficulty = c(4, 5, 1, 2, 2, 2, 3, 3, 2, 1, 1),
+                         Sub_category_1 = c(NA,"Cours",
+                                            NA, NA, NA, "Lab life",
+                                            NA,NA, NA, NA, NA
                                             )
                          )
 

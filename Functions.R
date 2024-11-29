@@ -212,18 +212,19 @@ calculate_recommended_date <- function(due_date, estimated_time, importance) {
     TRUE ~ NA_Date_  # Default to NA if none of the conditions match
   )
   
-  return(recommended_date)
+  return(as.Date(recommended_date, format = "%Y-%m-%d"))
 }
 
 add_to_do <- function(data = NULL, due_date, topic, activity, difficulty, 
                       estimated_time, importance, dependencies = FALSE, 
                       Sub_category_1 = NA, 
                       Sub_category_2 = NA, comment = NA) {
-  # Ensure due_date and due_date_dependencies are Date objects
+  
+  # Ensure due_date and recommended_date are Date objects
   due_date <- as.Date(due_date, format = "%Y-%m-%d")
-
+  
   # Calculate recommended date
-  recommended_date <- calculate_recommended_date(due_date, estimated_time, importance)
+  recommended_date <- as.Date(calculate_recommended_date(due_date, estimated_time, importance), format = "%Y-%m-%d")
   
   # Calculate urgency
   urgency <- calculate_urgency(recommended_date, dependencies)
@@ -231,45 +232,74 @@ add_to_do <- function(data = NULL, due_date, topic, activity, difficulty,
   # Calculate priority
   priority <- urgency + importance + difficulty
   
-  # Create a new data frame for the activity
+  # Create a new row
   new_rows <- data.frame(
-    Last_updated = Sys.Date(),
-    Due_date = due_date,
-    Recommended_date = recommended_date,
-    Topic = topic,
-    Activity = activity,
-    Difficulty = difficulty,
-    Estimated_time = estimated_time,
-    Importance = importance,
-    Dependencies = dependencies,
-    Urgency = urgency,
-    Priority = priority,
-    Sub_category_1 = Sub_category_1,
-    Sub_category_2 = Sub_category_2,
-    Comment = comment,
+    Priority = as.numeric(priority),
+    Urgency = as.numeric(urgency),
+    Importance = as.numeric(importance),
+    Topic = as.character(topic),
+    Activity = as.character(activity),
+    Difficulty = as.numeric(difficulty),
+    Due_date = as.Date(due_date),
+    Recommended_date = as.Date(recommended_date),
+    Estimated_time = as.numeric(estimated_time),
+    Dependencies = as.logical(dependencies),
+    Sub_category_1 = as.character(Sub_category_1),
+    Sub_category_2 = as.character(Sub_category_2),
+    Comment = as.character(comment),
+    Last_updated = as.Date(Sys.Date()),
     stringsAsFactors = FALSE
   )
   
-  # Handle initialization of `data`
-  if (is.null(data)) {
-    data <- new_rows
+  # Define the expected template for `data`
+  default_to_do_df <- data.frame(
+    Priority = numeric(),
+    Urgency = numeric(),
+    Importance = numeric(),
+    Topic = character(),
+    Activity = character(),
+    Difficulty = numeric(),
+    Due_date = as.Date(character(), format = "%Y-%m-%d"),
+    Recommended_date = as.Date(character(), format = "%Y-%m-%d"),
+    Estimated_time = numeric(),
+    Dependencies = logical(),
+    Sub_category_1 = character(),
+    Sub_category_2 = character(),
+    Comment = character(),
+    Last_updated = as.Date(numeric(), format = "%Y-%m-%d"),
+    stringsAsFactors = FALSE
+  )
+  
+  # Handle cases where `data` is NULL, empty, or misinterpreted
+  if (is.null(data) || nrow(data) == 0 || !all(names(data) %in% names(template))) {
+    message("Input data is empty, NULL, or incorrectly formatted. Initializing with correct structure.")
+    data <- default_to_do_df
   } else {
-    # Check for duplicates using anti_join
-    new_rows_filtered <- new_rows %>%
-      dplyr::anti_join(data, by = c("Due_date", "Activity"))
-    
-    if (nrow(new_rows_filtered) == 0) {
-      message("No new activities to add (all are duplicates).")
-      return(data)
-    }
-    
-    # Combine new activities with the existing data
-    data <- dplyr::bind_rows(data, new_rows_filtered)
+    # Ensure `data` conforms to the template's structure
+    data <- data %>%
+      dplyr::mutate(across(everything(), ~ replace_na(as(.x, class(template[[cur_column()]])), NA)))
   }
+  
+  # Check for duplicates using anti_join
+  new_rows_filtered <- new_rows %>%
+    dplyr::anti_join(data, by = c("Due_date", "Activity"))
+  
+  if (nrow(new_rows_filtered) == 0) {
+    message("No new activities to add (all are duplicates).")
+    return(data)
+  }
+  
+  # Combine new activities with the existing data
+  data <- dplyr::bind_rows(data, new_rows_filtered)
+  
+  # Sort the data by Due_date
+  data <- data %>%
+    dplyr::arrange(Due_date)
   
   message("New activities added.")
   return(data)
 }
+
 
 
 # Function to remove an activity from the data frame

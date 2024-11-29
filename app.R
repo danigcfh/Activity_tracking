@@ -27,7 +27,7 @@ ui <- navbarPage(
                          accept = c(".xlsx")),
                fileInput("Day_Analytics", "Upload Daily Summary File", 
                          accept = c(".xlsx")),
-               fileInput("To_do", "Upload To Do List File", 
+               fileInput("to_do", "Upload To Do List File", 
                          accept = c(".xlsx")),
                actionButton("submit_files", "Submit Files"),
                div(id = "file_notice", style = "color: red; font-weight: bold;")  # Placeholder for custom notification
@@ -55,8 +55,8 @@ server <- function(input, output, session) {
     day_analytics_uploaded = FALSE,
     activities_path = NULL,
     day_analytics_path = NULL,
-    To_do_uploaded = FALSE,
-    To_do_path = NULL
+    to_do_uploaded = FALSE,
+    to_do_path = NULL
   )
   # Default DataFrames
   default_activities_df <- data.frame(
@@ -92,23 +92,22 @@ server <- function(input, output, session) {
   )
   
   default_to_do_df <- data.frame(
-    Last_updated = numeric() ,
-    Due_date = numeric(),
-    Recommended_date = numeric(),
+    Priority = numeric(),
+    Urgency = numeric(),
+    Importance = numeric(),
     Topic = character(),
     Activity = character(),
     Difficulty = numeric(),
+    Due_date = as.Date(character(), format = "%Y-%m-%d"),
+    Recommended_date = as.Date(character(), format = "%Y-%m-%d"),
     Estimated_time = numeric(),
-    Importance = numeric(),
     Dependencies = logical(),
-    Urgency = numeric(),
-    Priority = numeric(),
     Sub_category_1 = character(),
     Sub_category_2 = character(),
     Comment = character(),
+    Last_updated = numeric() ,
     stringsAsFactors = FALSE
   )
-  
   
   # Reactive value to store file details
   file_info <- reactiveVal(list())
@@ -137,7 +136,7 @@ server <- function(input, output, session) {
       old_dir <- setwd(temp_dir)  # Change working directory to the temp directory
       on.exit(setwd(old_dir))    # Ensure we revert to the original directory after
       
-      zip(file, c("Activities.xlsx", "Day_Analytics.xlsx"))  # Use file names only
+      zip(file, c("Activities.xlsx", "Day_Analytics.xlsx", "To_do.xlsx"))  # Use file names only
     }
   )
   
@@ -166,10 +165,10 @@ server <- function(input, output, session) {
     showNotification("Daily Summary file uploaded successfully!", type = "message")
   })
   # Monitor file uploads
-  observeEvent(input$To_do, {
-    req(input$To_do)
-    upload_status$To_do_uploaded <- TRUE
-    upload_status$To_do_path <- input$To_do$datapath
+  observeEvent(input$to_do, {
+    req(input$to_do)
+    upload_status$to_do_uploaded <- TRUE
+    upload_status$to_do_path <- input$to_do$datapath
     showNotification("To do list uploaded successfully!", type = "message")
   })
   
@@ -178,7 +177,7 @@ server <- function(input, output, session) {
     # Read the uploaded files
     activities_file <- readxl::read_xlsx(input$activities_file$datapath)
     day_analytics_file <- readxl::read_xlsx(input$Day_Analytics$datapath)
-    To_do_file <- readxl::read_xlsx(input$To_do$datapath)
+    to_do_file <- readxl::read_xlsx(input$to_do$datapath)
     
     # Function to check if a data frame has the correct columns and types
     check_file_compatibility <- function(df, default_df) {
@@ -207,15 +206,15 @@ server <- function(input, output, session) {
     # Check compatibility for each file
     activities_check <- check_file_compatibility(activities_file, default_activities_df)
     day_analytics_check <- check_file_compatibility(day_analytics_file, default_day_analytics_df)
-    To_do_check <- check_file_compatibility(To_do_file, default_to_do_df)
+    to_do_check <- check_file_compatibility(to_do_file, default_to_do_df)
     
     # If any file has issues, show an error message
     if (!is.null(activities_check)) {
       showNotification(paste("Activities file error: ", activities_check), type = "error")
     } else if (!is.null(day_analytics_check)) {
       showNotification(paste("Day Analytics file error: ", day_analytics_check), type = "error")
-    } else if (!is.null(To_do_check)) {
-      showNotification(paste("Day Analytics file error: ", To_do_check), type = "error")
+    } else if (!is.null(to_do_check)) {
+      showNotification(paste("To Do List error: ", to_do_check), type = "error")
     } else {
       # Store file details (temporary paths and original names)
       file_info(list(
@@ -228,8 +227,8 @@ server <- function(input, output, session) {
           name = input$Day_Analytics$name
         ),
         to_do = list(
-          path = input$To_do$datapath,
-          name = input$To_do$name
+          path = input$to_do$datapath,
+          name = input$to_do$name
         )
       )
       )
@@ -278,6 +277,8 @@ server <- function(input, output, session) {
     activities(activities_data())
   })
   
+  #Define daily analytics file
+  
   per_day_data <- reactive({
     req(upload_status$day_analytics_path)
     tryCatch({
@@ -293,7 +294,6 @@ server <- function(input, output, session) {
     })
   })
   
-  
   # Define a reactiveVal for the editable activities
   per_day <- reactiveVal()
   
@@ -302,10 +302,39 @@ server <- function(input, output, session) {
     per_day(per_day_data())
   })
   
+  #Define to do list
+  
+  to_do_data <- reactive({
+    req(upload_status$to_do_path)
+    tryCatch({
+      raw_data <- read_excel(upload_status$to_do_path)
+      validate(
+        need("Due_date" %in% colnames(raw_data), "'Due date' column is missing.")
+      )
+      raw_data <- raw_data %>% mutate(Due_date = as.Date(Due_date, format = "%Y-%m-%d"))
+      raw_data <- raw_data %>% mutate(Recommended_date = as.Date(Recommended_date, format = "%Y-%m-%d"))
+      enforce_column_classes(raw_data, default_to_do_df)
+    }, error = function(e) {
+      showNotification(paste("Error reading To Do file:", e$message), type = "error")
+      return(default_to_do_df)
+    })
+  })
+  
+  # Define a reactiveVal for the editable activities
+  to_do <- reactiveVal()
+  
+  # Initialize the reactiveVal with the loaded data when the app starts
+  observe({
+    to_do(to_do_data())
+  })
+  
   # Global initialization for topics and sub-categories
   topics <- c("None", "Other (Add new)")
   sub_cat1 <- c("None", "Other (Add new)")
   sub_cat2 <- c("None", "Other (Add new)")
+  to_do_topics <- c("None", "Other (Add new)")
+  to_do_sub_cat1 <- c("None", "Other (Add new)")
+  to_do_sub_cat2 <- c("None", "Other (Add new)")
   
   # UI for conditional tabs
   output$add_data_ui <- renderUI({
@@ -313,6 +342,9 @@ server <- function(input, output, session) {
     topics <- c("None")
     sub_cat1 <- c("None")
     sub_cat2 <- c("None")
+    to_do_topics <- c("None")
+    to_do_sub_cat1 <- c("None")
+    to_do_sub_cat2 <- c("None")
     
     if (!is.null(activities()) && nrow(activities()) > 0) {
       # Populate topics and subcategories dynamically
@@ -321,10 +353,20 @@ server <- function(input, output, session) {
       sub_cat2 <- unique(activities()$Sub_Category_2)
     }
     
+    if (!is.null(to_do()) && nrow(to_do()) > 0) {
+      # Populate topics and subcategories dynamically
+      to_do_topics <- unique(to_do()$Topic)
+      to_do_sub_cat1 <- unique(to_do()$Sub_Category_1)
+      to_do_sub_cat2 <- unique(to_do()$Sub_Category_2)
+    }
+
     # Add "Other (Add new)" and "None" options
     topics <- c(topics, "Other (Add new)", "None")
     sub_cat1 <- c(sub_cat1, "Other (Add new)", "None")
     sub_cat2 <- c(sub_cat2, "Other (Add new)", "None")
+    to_do_topics <- c(to_do_topics, "Other (Add new)", "None")
+    to_do_sub_cat1 <- c(to_do_sub_cat1, "Other (Add new)", "None")
+    to_do_sub_cat2 <- c(to_do_sub_cat2, "Other (Add new)", "None")
     
     # Define the UI layout with tabs
     sidebarLayout(
@@ -338,19 +380,22 @@ server <- function(input, output, session) {
                     tabPanel("Add Activity",
                              fluidRow(
                                column(6,
+                                      tags$div(style = "margin-top: 10px;"),
                                       h4("Add Activity"),
                                       dateInput("date", "Date:", value = Sys.Date()),
                                       selectInput("topic", "Topic:", choices = topics),
                                       textInput("activity", "Activity:"),
                                       fluidRow(
-                                        column(10, sliderInput("difficulty", "Difficulty:", min = 1, max = 5, value = 3),
-                                               column(2, actionButton("help_difficulty", "?", class = "btn-info btn-sm"))
-                                        )),                                      selectInput("sub_cat1", "Sub-Category 1:", choices = sub_cat1, selected = "None"),
+                                        column(10, sliderInput("difficulty", "Difficulty:", min = 1, max = 5, value = 3)),
+                                        column(2, actionButton("help_difficulty", "?", class = "btn-info btn-sm"))
+                                        ),                                      
+                                      selectInput("sub_cat1", "Sub-Category 1:", choices = sub_cat1, selected = "None"),
                                       selectInput("sub_cat2", "Sub-Category 2:", choices = sub_cat2, selected = "None"),
                                       textAreaInput("comment", "Comments:"),
                                       actionButton("add_activity", "Add Activity")
                                ),
-                               column(6,
+                               column(4,
+                                      tags$div(style = "margin-top: 10px;"),
                                       h4("Delete Activity"),
                                       selectInput("delete_activity_date", "Select Date:", choices = unique(activities()$Day)),
                                       selectInput("delete_activity_topic", "Select Topic:", choices = NULL), # Empty initially
@@ -363,6 +408,7 @@ server <- function(input, output, session) {
                     tabPanel("Add Daily Evaluation",
                              fluidRow(
                                column(6,
+                                      tags$div(style = "margin-top: 10px;"),
                                       h4("Add Daily Evaluation"),
                                       dateInput("mood_date", "Date:", value = Sys.Date()),
                                       fluidRow(
@@ -387,6 +433,7 @@ server <- function(input, output, session) {
                                       actionButton("add_mood", "Add Daily Update")
                                ),
                                column(6,
+                                      tags$div(style = "margin-top: 10px;"),
                                       h4("Delete Daily Evaluation"),
                                       selectInput("delete_mood_date", "Select Date:", choices = unique(activities()$Day)),
                                       actionButton("delete_mood", "Delete Evaluation")
@@ -397,70 +444,255 @@ server <- function(input, output, session) {
                     tabPanel("Manage to do list",
                              fluidRow(
                                column(6,
+                                      tags$div(style = "margin-top: 10px;"),
                                       h4("Add Activity to To-Do"),
                                       dateInput("due_date", "Due Date:", value = Sys.Date()),
-                                      selectInput("topic", "Topic:", choices = topics),
-                                      textInput("activity", "Activity:"),
+                                      selectInput("to_do_topic", "Topic:", choices = to_do_topics),
+                                      textInput("to_do_activity", "Activity:"),
                                       fluidRow(
-                                        column(10, sliderInput("difficulty", "Difficulty:", min = 1, max = 5, value = 3),
-                                        column(2, actionButton("help_difficulty", "?", class = "btn-info btn-sm"))
-                                      ),
-                                      sliderInput("estimated_time", "Estimated Time (hours):", min = 0.5, max = 8, value = 3, step = 0.5),
+                                        column(10, sliderInput("to_do_difficulty", "Difficulty:", min = 1, max = 5, value = 3)),
+                                        column(2, actionButton("help_difficulty", "?", class = "btn-info btn-sm")
+                                      )),
+                                      sliderInput("to_do_estimated_time", "Estimated Time (hours):", min = 0.5, max = 8, value = 3, step = 0.5),
                                       fluidRow(
-                                        column(10, sliderInput("importance", "Importance:", min = 1, max = 5, value = 3),
-                                               column(2, actionButton("help_importance", "?", class = "btn-info btn-sm"))
-                                        )),
+                                        column(10, sliderInput("to_do_importance", "Importance:", min = 1, max = 5, value = 3)),
+                                        column(2, actionButton("help_importance", "?", class = "btn-info btn-sm"))
+                                        ),
                                       fluidRow(
-                                        column(10,selectInput("dependencies", "Dependencies:", choices = c("Yes", "No"), selected = "No"),
-                                               column(2, actionButton("help_dependencies", "?", class = "btn-info btn-sm"))
-                                        )),
-                                      selectInput("sub_cat1", "Sub-Category 1:", choices = sub_cat1, selected = "None"),
-                                      selectInput("sub_cat2", "Sub-Category 2:", choices = sub_cat2, selected = "None"),
-                                      textAreaInput("comment", "Comments:"),
+                                        column(10,selectInput("to_do_dependencies", "Dependencies:", choices = c("Yes", "No"), selected = "No")),
+                                        column(2, actionButton("help_dependencies", "?", class = "btn-info btn-sm"))
+                                        ),
+                                      selectInput("to_do_sub_cat1", "Sub-Category 1:", choices = to_do_sub_cat1, selected = "None"),
+                                      selectInput("to_do_sub_cat2", "Sub-Category 2:", choices = to_do_sub_cat2, selected = "None"),
+                                      textAreaInput("to_do_comment", "Comments:"),
                                       actionButton("add_to_do", "Add To-Do")
-                               )),
-                               column(6,
+                               ),
+                               column(4,
+                                      tags$div(style = "margin-top: 10px;"),
                                       h4("Mark Task as Done"),
-                                      selectInput("done_activity_date", "Select Date:", choices = unique(activities()$Day)),
+                                      selectInput("done_activity_due_date", "Select Due Date:", choices = unique(to_do()$Due_date)),
+                                      dateInput("done_activity_date", "Select Date Done:", value = Sys.Date()),
                                       selectInput("done_activity_topic", "Select Topic:", choices = NULL), # Empty initially
                                       selectInput("done_activity_name", "Select Activity:", choices = NULL), # Empty initially
-                                      actionButton("done_activity", "Mark as Done")
-                               ),
-                               column(6,
+                                      actionButton("done_activity", "Mark as Done"), 
+                                      tags$div(style = "margin-top: 20px;"),
                                       h4("Delete Activity"),
                                       selectInput("delete_to_do_date", "Select Date:", choices = unique(activities()$Day)),
-                                      selectInput("delete_ato_do_topic", "Select Topic:", choices = NULL), # Empty initially
+                                      selectInput("delete_to_do_topic", "Select Topic:", choices = NULL), # Empty initially
                                       selectInput("delete_to_do_name", "Select Activity:", choices = NULL), # Empty initially
                                       actionButton("delete_to_do_activity", "Delete Activity from to do list")
                                )
                              )
                     )
         )
+        )
       )
-    )
   })
   
-  # Server-side logic for updating the delete activity input based on the selected date
+  # Observe event when the user selects "Other (Add new)" for Topic in to do list
+  observeEvent(input$to_do_topic, {
+    if (input$to_do_topic == "Other (Add new)") {
+      showModal(modalDialog(
+        title = "Add New Topic",
+        textInput("to_do_new_topic", "Enter new topic:"),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton("to_do_save_new_topic", "Save")
+        )
+      ))
+    } else if (input$to_do_topic == "None") {
+      updateSelectInput(session, "to_do_topic", selected = "")
+    }
+  })
+  
+  # Observe event when the user selects "Other (Add new)" for Sub-Category 1 in to do list
+  observeEvent(input$to_do_sub_cat1, {
+    if (input$to_do_sub_cat1 == "Other (Add new)") {
+      showModal(modalDialog(
+        title = "Add New Sub-Category 1",
+        textInput("to_do_new_sub_cat1", "Enter new sub-category 1:"),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton("to_do_save_new_sub_cat1", "Save")
+        )
+      ))
+    } else if (input$to_do_sub_cat1 == "None") {
+      # Automatically set Sub-Category 1 to NA when "No predefined categories" is selected
+      updateSelectInput(session, "to_do_sub_cat1", selected = "")
+    }
+  })
+  
+  # Observe event when the user selects "Other (Add new)" for Sub-Category 2 in to do. list
+  observeEvent(input$to_do_sub_cat2, {
+    if (input$to_do_sub_cat2 == "Other (Add new)") {
+      showModal(modalDialog(
+        title = "Add New Sub-Category 2",
+        textInput("to_do_new_sub_cat2", "Enter new sub-category 2:"),
+        footer = tagList(
+          modalButton("Cancel"),
+          actionButton("to_do_save_new_sub_cat2", "Save")
+        )
+      ))
+    } else if (input$to_do_sub_cat2 == "None") {
+      # Automatically set Sub-Category 2 to NA when "No predefined categories" is selected
+      updateSelectInput(session, "to_do_sub_cat2", selected = "")
+    }
+  })
+  
+  # Update activities with the new topic when saved
+  observeEvent(input$to_do_save_new_topic, {
+    to_do_new_topic <- input$to_do_new_topic
+    if (to_do_new_topic != "") {
+      # Add the new topic to the topics list globally
+      to_do_topics <<- c(to_do_topics, to_do_new_topic, "Other (Add new)")  # Update topics with the new one
+      # Update the dropdown menu with the new topic
+      updateSelectInput(session, "to_do_topic", choices = to_do_topics, selected = to_do_new_topic)  # Set new topic as selected
+      removeModal()  # Close the modal
+    } else {
+      showModal(modalDialog(
+        title = "Error",
+        "Please enter a valid topic.",
+        easyClose = TRUE
+      ))
+    }
+  })
+  
+  # Update sub-category 1 with the new sub-category when saved
+  observeEvent(input$to_do_save_new_sub_cat1, {
+    to_do_new_sub_cat1 <- input$to_do_new_sub_cat1
+    if (to_do_new_sub_cat1 != "") {
+      # Add the new sub-category 1 to the sub_cat1 list globally
+      to_do_sub_cat1 <<- c(to_do_sub_cat1, to_do_new_sub_cat1, "Other (Add new)")  # Update sub_cat1 with the new one
+      # Update the dropdown menu with the new sub-category 1
+      updateSelectInput(session, "to_do_sub_cat1", choices = to_do_sub_cat1, selected = to_do_new_sub_cat1)  # Set new sub-category 1 as selected
+      removeModal()  # Close the modal
+    } else {
+      showModal(modalDialog(
+        title = "Error",
+        "Please enter a valid sub-category 1.",
+        easyClose = TRUE
+      ))
+    }
+  })
+  
+  # Update sub-category 2 with the new sub-category when saved
+  observeEvent(input$to_do_save_new_sub_cat2, {
+    to_do_new_sub_cat2 <- input$to_do_new_sub_cat2
+    if (to_do_new_sub_cat2 != "") {
+      # Add the new sub-category 2 to the sub_cat2 list globally
+      to_do_sub_cat2 <<- c(to_do_sub_cat2, to_do_new_sub_cat2, "Other (Add new)")  # Update sub_cat2 with the new one
+      # Update the dropdown menu with the new sub-category 2
+      updateSelectInput(session, "to_do_sub_cat2", choices = to_do_sub_cat2, selected = to_do_new_sub_cat2)  # Set new sub-category 2 as selected
+      removeModal()  # Close the modal
+    } else {
+      showModal(modalDialog(
+        title = "Error",
+        "Please enter a valid sub-category 2.",
+        easyClose = TRUE
+      ))
+    }
+  })
+  
+  # Server-side logic for updating the activity input based on the selected date and topic
+  observeEvent(input$done_activity_date, {
+    date_selected <- input$done_activity_due_date
+    if (!is.null(date_selected) && !is.null(to_do()) && nrow(to_do()) > 0) {
+      # Filter activities for the selected date
+      topics_for_date <- to_do() %>% filter(Day == date_selected)
+      
+      # Update the 'delete_activity_topic' choices
+      updateSelectInput(session, "done_activity_topic", choices = c(topics_for_date$Topic, NA))
+    }
+  })
+  
+  observeEvent(input$done_activity_topic, {
+    date_selected <- input$done_activity_due_date
+    topic_selected <- input$done_activity_topic
+    
+    if (!is.null(date_selected) && !is.null(topic_selected) && !is.null(to_do()) && nrow(to_do()) > 0) {
+      # Filter activities for the selected date and topic
+      activities_for_topic <- to_do() %>% filter(Due_date == date_selected & Topic == topic_selected)
+      
+      
+      # Update the 'delete_activity_name' choices
+      updateSelectInput(session, "done_activity_name", choices = c(NA, activities_for_topic$Activity))
+    }
+  })
+  
+  # Server-side logic for deleting an activity
+  observeEvent(input$done_activity, {
+    # Get the inputs
+    date_selected <- input$done_activity_due_date
+    topic_selected <- input$done_activity_topic
+    activity_name <- input$done_activity_name
+    
+    # Ensure all inputs are provided
+    if (is.null(date_selected) || is.null(topic_selected) || is.null(activity_name) || is.null(to_do()) || nrow(to_do()) == 0) {
+      showNotification("Please select a date, topic, and activity to delete.", type = "error")
+      return()
+    }
+    
+    if (!is.null(date_selected) && !is.null(topic_selected) && !is.null(activity_name) && !is.null(to_do()) && nrow(to_do()) > 0&& !is.null(activities())) {
+      
+      # Access the current to do list dataset
+      current_list <- to_do()
+      
+      # Filter out the to do list activity to be deleted
+      updated_list <- current_list %>%
+        filter(!(Day == date_selected & Topic == topic_selected & Activity == activity_name))
+      
+      # Update the reactive variable
+      to_do(updated_list)
+      
+      # get the activity done
+      done_list <- current_list %>%
+        filter((Day == date_selected & Topic == topic_selected & Activity == activity_name))
+
+      # Access the current to do list dataset
+      current_activities <- activities()
+      
+      new_data <- data.frame(
+        Day = as.Date(input$done_activity_date, format = "%Y-%m-%d"),
+        Topic = done_list$Topic,
+        Activity = done_list$Activity,
+        Difficulty = as.numeric(done_list$difficulty),
+        Sub_Category_1 = done_list$sub_cat1,
+        Sub_Category_2 = done_list$sub_cat2,
+        Comment = done_list$comment,
+        stringsAsFactors = FALSE
+      )
+      
+      activities(rbind(activities(), new_data))
+      
+      # Provide user feedback
+      showNotification(paste("Activity moved from To Do List to Activity", "on", date_selected), type = "message")
+    } 
+  })
+  
+  
+  # Server-side logic for updating the delete activity input based on the selected date and topic
   observeEvent(input$delete_activity_date, {
     date_selected <- input$delete_activity_date
-    if (!is.null(date_selected)) {
+    if (!is.null(date_selected) && !is.null(activities()) && nrow(activities()) > 0) {
       # Filter activities for the selected date
       topics_for_date <- activities() %>% filter(Day == date_selected)
       
-      # Update the 'delete_activity_name' choices based on the filtered activities
-      updateSelectInput(session, "delete_activity_name", choices = topics_for_date$Topic)
+      # Update the 'delete_activity_topic' choices
+      updateSelectInput(session, "delete_activity_topic", choices = c(topics_for_date$Topic, NA))
     }
   })
   
   observeEvent(input$delete_activity_topic, {
     date_selected <- input$delete_activity_date
     topic_selected <- input$delete_activity_topic
-    if (!is.null(topic_selected)) {
-      # Filter activities for the selected date
-      activities_for_date <- activities() %>% filter(Day == date_selected & Topic == topic_selected)
+    
+    if (!is.null(date_selected) && !is.null(topic_selected) && !is.null(activities()) && nrow(activities()) > 0) {
+      # Filter activities for the selected date and topic
+      activities_for_topic <- activities() %>% filter(Day == date_selected & Topic == topic_selected)
       
-      # Update the 'delete_activity_name' choices based on the filtered activities
-      updateSelectInput(session, "delete_activity_name", choices = activities_for_date$Activities)
+      
+      # Update the 'delete_activity_name' choices
+      updateSelectInput(session, "delete_activity_name", choices = c(NA, activities_for_topic$Activity))
     }
   })
   
@@ -472,24 +704,124 @@ server <- function(input, output, session) {
     activity_name <- input$delete_activity_name
     
     # Ensure all inputs are provided
-    if (is.null(date_selected) || is.null(topic_selected) || is.null(activity_name)) {
+    if (is.null(date_selected) || is.null(topic_selected) || is.null(activity_name) || is.null(activities()) || nrow(activities()) == 0) {
       showNotification("Please select a date, topic, and activity to delete.", type = "error")
       return()
     }
     
-    # Access the current activities dataset
-    current_activities <- activities()
-    
-    # Filter out the activity to be deleted
-    updated_activities <- current_activities %>%
-      filter(!(Day == date_selected & Topic == topic_selected & Activities == activity_name))
-    
-    # Update the reactive variable
-    activities(updated_activities)
-    
-    # Provide user feedback
-    showNotification(paste("Deleted activity:", activity_name, "on", date_selected), type = "message")
+    if (!is.null(date_selected) && !is.null(topic_selected) && !is.null(activity_name) && !is.null(activities()) && nrow(activities()) > 0) {
+      
+      # Access the current activities dataset
+      current_activities <- activities()
+      
+      # Filter out the activity to be deleted
+      updated_activities <- current_activities %>%
+        filter(!(Day == date_selected & Topic == topic_selected & Activity == activity_name))
+      
+      # Update the reactive variable
+      activities(updated_activities)
+      
+      # Provide user feedback
+      showNotification(paste("Deleted activity:", activity_name, "on", date_selected), type = "message")
+      } 
+    })
+  
+  # Server-side logic for updating the delete to do  activity input based on the selected date and topic
+  observeEvent(input$delete_to_do_date, {
+    date_selected <- input$delete_to_do_date
+    if (!is.null(date_selected) && !is.null(to_do()) && nrow(to_do()) > 0) {
+      # Filter activities for the selected date
+      topics_for_date <- to_do() %>% filter(Day == date_selected)
+      
+      # Update the 'delete_activity_name' choices based on the filtered activities
+      updateSelectInput(session, "delete_to_do_topic", choices = topics_for_date$Topic)
+    }
   })
+  
+  observeEvent(input$delete_to_do_topic, {
+    date_selected <- input$delete_to_do_date
+    topic_selected <- input$delete_to_do_topic
+    if (!is.null(date_selected) && !is.null(topic_selected) && !is.null(to_do()) && nrow(to_do()) > 0) {
+      # Filter activities for the selected date
+      activities_for_date <- to_do() %>% filter(Day == date_selected & Topic == topic_selected)
+      
+      # Update the 'delete_activity_name' choices based on the filtered activities
+      updateSelectInput(session, "delete_to_do_name", choices = activities_for_date$Activity)
+    }
+  })
+  
+  # Server-side logic for deleting an activity from the to do list
+  observeEvent(input$delete_to_do_activity, {
+    # Get the inputs
+    date_selected <- input$delete_to_do_date
+    topic_selected <- input$delete_to_do_topic
+    activity_name <- input$delete_to_do_name
+    
+    # Ensure all inputs are provided
+    if (is.null(date_selected) || is.null(topic_selected) || is.null(activity_name) || is.null(to_do()) || nrow(to_do()) == 0) {
+      showNotification("Please select a date, topic, and activity to delete.", type = "error")
+      return()
+    }
+    
+    if (!is.null(date_selected) && !is.null(topic_selected) && !is.null(activity_name) && !is.null(to_do()) && nrow(to_do()) > 0) {
+        
+      # Access the current activities dataset
+      current_activities <- to_do()
+      
+      # Filter out the activity to be deleted
+      updated_activities <- current_activities %>%
+        filter(!(Day == date_selected & Topic == topic_selected & Activity == activity_name))
+      
+      # Update the reactive variable
+      to_do(updated_activities)
+      
+      # Provide user feedback
+      showNotification(paste("Deleted activity:", activity_name, "on", date_selected), type = "message")
+      }
+    })
+  
+  # Server-side logic for deleting specific columns of an evaluation
+  observeEvent(input$delete_mood, {
+    # Get the inputs
+    date_selected <- input$delete_mood_date
+    
+    # Ensure all inputs are provided
+    if (!is.null(date_selected) && !is.null(per_day()) && nrow(per_day()) > 0) {
+      showNotification("Please select a date", type = "error")
+      return()
+    }
+    
+    if (!is.null(date_selected) && !is.null(per_day()) && nrow(per_day()) > 0) {
+      
+      # Access the current dataset
+      current_mood <- per_day()
+      
+      # Ensure the date exists in the dataset
+      if (!date_selected %in% current_mood$Day) {
+        showNotification("The selected date does not exist in the data.", type = "error")
+        return()
+      }
+      
+      # Update specific columns to NA for the selected date
+      current_mood <- current_mood %>%
+        mutate(
+          sleep = if_else(Day == date_selected, NA_real_, sleep),
+          anxiety = if_else(Day == date_selected, NA_real_, anxiety),
+          mood = if_else(Day == date_selected, NA_real_, mood),
+          health = if_else(Day == date_selected, NA_real_, health),
+          exercise_low = if_else(Day == date_selected, NA_real_, exercise_low),
+          exercise_high = if_else(Day == date_selected, NA_real_, exercise_high),
+          comment = if_else(Day == date_selected, NA_character_, comment)
+        )
+      
+      # Update the reactive variable
+      per_day(current_mood)
+      
+      # Provide user feedback
+      showNotification(paste("Cleared selected fields for Daily Evaluation on", date_selected), type = "message")
+      }
+    })
+  
   
   # Modal for Sleep Scale
   observeEvent(input$help_sleep, {
@@ -725,7 +1057,7 @@ server <- function(input, output, session) {
         sidebarPanel(
           h4("View Recorded Data"),
           dateRangeInput("date_range_raw", "Filter by Date Range:",
-                         start = Sys.Date() - 30, end = Sys.Date()),
+                         start = Sys.Date()-15, end = Sys.Date()+15),
           # Dynamically rendered dropdown inputs based on selected tab
           uiOutput("variables_ui_1"),
           actionButton("refresh", "Refresh Summary"),
@@ -735,7 +1067,8 @@ server <- function(input, output, session) {
           tabsetPanel(
             id = "raw_data_tabs",
             tabPanel("Activities", DTOutput("activities_table")),
-            tabPanel("Daily Summary", DTOutput("summary_table"))
+            tabPanel("Daily Summary", DTOutput("summary_table")),
+            tabPanel("To Do List", DTOutput("to_do_table"))
           ),
           
         )
@@ -804,6 +1137,37 @@ server <- function(input, output, session) {
     per_day(new_data)
     showNotification("Daily evaluation added successfully!", type = "message")
   })
+  
+  # Add activity to the to do list
+  # Observe event to add new activity
+  observeEvent(input$add_to_do, {
+    # Retrieve the current to-do list
+    current_data <- to_do_data()
+    
+    # Convert "Yes"/"No" dependencies to logical
+    dependencies <- input$to_do_dependencies == "Yes"
+    
+    # Add the new activity
+    updated_data <- add_to_do(
+      data = current_data,
+      due_date = as.Date(input$due_date, format = "%Y-%m-%d"),
+      topic = input$to_do_topic,
+      activity = input$to_do_activity,
+      difficulty = input$to_do_difficulty,
+      estimated_time = input$to_do_estimated_time,
+      importance = input$to_do_importance,
+      dependencies = dependencies,
+      Sub_category_1 = input$to_do_sub_cat1,
+      Sub_category_2 = input$to_do_sub_cat2,
+      comment = input$to_do_comment
+    )
+    
+    # Update the reactive to-do list
+    to_do(updated_data)
+    showNotification("Activity added successfully to the to do list!", type = "message")
+    
+  })
+  
   
   # Final results processing for summary
   # Reactive processing logic for final results
@@ -985,6 +1349,8 @@ server <- function(input, output, session) {
     }
   })
   
+  
+  
   # Define a list of custom ranges for each variable
   custom_ranges <- list(
     "Difficulty" = c(1, 5), 
@@ -1147,6 +1513,55 @@ server <- function(input, output, session) {
     filtered_summary_table()  # Use the filtered data
   })
 
+  filtered_to_do_table <- reactive({
+    to_do_data <- to_do() 
+    
+    # Convert date range inputs to Date format
+    date_range_start <- as.Date(input$date_range_raw[1], format = "%Y-%m-%d")
+    date_range_end <- as.Date(input$date_range_raw[2], format = "%Y-%m-%d")
+    
+    to_do_data$Due_date <- as.Date(to_do_data$Due_date, format = "%Y-%m-%d")
+    to_do_data$Recommended_date <- as.Date(to_do_data$Recommended_date, format = "%Y-%m-%d")
+    
+    # Apply the date filter 
+    to_do_data <- to_do_data %>%
+      filter((is.na(Due_date) | (Due_date >= date_range_start & Due_date <= date_range_end))) 
+    
+    # Apply filters dynamically based on user input
+    for (colname in names(to_do_data)) {
+      filter_col <- paste0(colname, "_filter")
+      
+      if (!is.null(input[[filter_col]]) && length(input[[filter_col]]) > 0) {
+        if ("All" %in% input[[filter_col]]) {
+          next  # Skip filtering if "All" is selected
+        }
+        
+        # Handle numeric columns
+        if (is.numeric(to_do_data[[colname]])) {
+          to_do_data <- to_do_data %>%
+            filter((is.na(to_do_data[[colname]]) | 
+                      (to_do_data[[colname]] >= min(input[[filter_col]]) &
+                         to_do_data[[colname]] <= max(input[[filter_col]]))))
+        } else {
+          # Handle categorical columns
+          to_do_data <- to_do_data %>%
+            filter((is.na(to_do_data[[colname]]) | 
+                      to_do_data[[colname]] %in% input[[filter_col]]))
+        }
+      }
+    }
+    
+    # Return the filtered data (with NA values retained)
+    to_do_data
+  })
+  
+  
+  # Render filtered summary table
+  output$to_do_table <- renderDT({
+    filtered_to_do_table()  # Use the filtered data
+  })
+  
+  
     # Dynamically render the checkboxGroupInput based on the active tab
   output$variables_ui_2 <- renderUI({
       # Get the active tab

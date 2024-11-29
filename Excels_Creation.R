@@ -68,20 +68,20 @@ write_xlsx(Analytics_per_topic, "Topic_Analytics.xlsx")
 
 #to do tasks tracking
 To_do <- data.frame(
-  Last_updated = numeric() ,
-  Due_date = numeric(),
-  Recommended_date = numeric(),
+  Priority = numeric(),
+  Urgency = numeric(),
+  Importance = numeric(),
   Topic = character(),
   Activity = character(),
   Difficulty = numeric(),
+  Due_date = numeric(),
+  Recommended_date = numeric(),
   Estimated_time = numeric(),
-  Importance = numeric(),
   Dependencies = logical(),
-  Urgency = numeric(),
-  Priority = numeric(),
   Sub_category_1 = character(),
   Sub_category_2 = character(),
   Comment = character(),
+  Last_updated = numeric() ,
   stringsAsFactors = FALSE
 )
 

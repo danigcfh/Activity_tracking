@@ -9,18 +9,16 @@ library(lubridate)
 #Load data
 Per_day <- read_excel("Day_Analytics.xlsx")
 
-View(Mood)
-
 #add mood
 new_data <-add_mood(data = Per_day,
                     day = Sys.Date()-1,
-                    sleep = 4,  
+                    sleep = 3,  
                     anxiety = 2, 
-                    mood = 2, 
+                    mood = 0, 
                     health = 0,
-                    exercise_low = 48, 
+                    exercise_low = NA, 
                     exercise_high = NA, 
-                    comment = "pretty good day overall, always exhausting to go to paris but got to actually enter the CEMTI this time")
+                    comment = "exhausting day, couldn't get much done, decided to rest given ")
 
 #Scale for anxiety
 # To take into account, single events can push anxiety number up even if the day overall is a lesser score

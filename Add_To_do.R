@@ -8,10 +8,12 @@ library(lubridate)
 #Load data
 To_do <- read_excel("To_do.xlsx")
 
+View(To_do)
+
 #add mood
-new_data <-add_to_do(data = NA,
-                     due_date = To_do$Due_date,
-                     topic = To_do$Topic, 
+new_data <-add_to_do(data = To_do,
+                     due_date = as.Date("2024-11-06", ),
+                     topic = "PhD Work", 
                      activity = To_do$Activity, 
                      difficulty  = To_do$Difficulty, 
                      estimated_time = To_do$Estimated_time, 
