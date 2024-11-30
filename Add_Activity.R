@@ -15,36 +15,42 @@ View(Activities)
 
 new_data <- add_activity(data = Activities,
                          day = Sys.Date()-1,
-                         topic = c("AppDevelopment",
-                                   "PhD Work",
-                                   "Self-care",
+                         topic = c("Others",
                                    "Administratif",
                                    "PhD Work",
-                                   "House",
-                                   "House",
+                                   "Administratif",
+                                   "PhD Work",
+                                   "PhD Work",
                                    "AppDevelopment",
-                                   "House",
+                                   "AppDevelopment",
                                    "Self-care",
-                                   "House"
+                                   "Others",
+                                   "AppDevelopment"
                                    ),
-                         activity = c("Finish defining and debugin all functions related to add_to_do ",
-                           "reunion to get personalized pedagogy support",
-                           "update diary/mood tracking",
-                           "Emails",
-                           "lab life: answer texts, get up to day with ongoing events",
-                           "install temperature regulators in greenhouse",
-                           "House maintenance: dishes, triage and remove big cardboard boxes",
-                           "Integrate to do list to UI",
-                           "Cook",
-                           "Shower",
-                           "Fold laundry"
+                         activity = c("Train to Paris",
+                           "Make doctor's appointments, confirm optique schedule",
+                           "Read 1 article guerre culturelle, guerre de mots",
+                           "Schedule trains next week",
+                           "Séminaire CEMTI",
+                           "Seminaire classe inversée: pedagogic tips",
+                           "personal project: Debug delete buttons",
+                           "personal project: Integration of to_do to sever function",
+                           "Therapy",
+                           "Train back home",
+                           "update readme and create shiny.io account"
                            ), 
-                         difficulty = c(4, 5, 1, 2, 2, 2, 3, 3, 2, 1, 1),
-                         Sub_category_1 = c(NA,"Cours",
-                                            NA, NA, NA, "Lab life",
+                         difficulty = c(2, 2, 3, 1, 4, 5, 3, 4, 4, 2, 2),
+                         Sub_category_1 = c(NA,NA,
+                                            "Thèse", NA, "Thèse", "Cours",
                                             NA,NA, NA, NA, NA
-                                            )
+                                            ),
+                         Sub_category_2 = c(NA,NA,
+                                            "Bibliography", NA, "Seminar", "Seminar",
+                                            NA,NA, NA, NA, NA
                          )
+                         )
+
+difficulties <- c(2, 2, 3, 1, 4, 5, 3, 4, 4, 2, 2)
 
 
 View(new_data)

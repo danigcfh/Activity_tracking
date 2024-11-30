@@ -1,9 +1,11 @@
 This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0 
 
-## Activity Tracking Scripts
+## Activity Tracking Project
 
 ### Description
-This repository contains three R scripts designed for tracking daily activities and analytics, including difficulty, mood, sleep, and exercise, to help analyze personal productivity and well-being.
+This repository contains a shiny r app thought for tracking activities, as well as all R scripts used for its development. 
+I originally developed it to help me analyze personal productivity and well-being by objectifying my feelings and their impact on my productivity.
+The logic for how different factors affect different measurements (for example, how sleep impacts tasks difficulty) can be found in the R files within this repository, primaraly in the Functions.R script. 
 It's a personal initiative to track my daily activities, mood and how these things interact.
 
 ### Support this project
@@ -40,7 +42,7 @@ These files worked as the base to inspire the app, a testing ground of sorts.
 I suggest to use these scripts as a base to personalize the kind of data and functions. 
 
 1. **`Create_Files.R`**  
-   Creates two Excel files:
+   Creates 3 Excel files:
    - `Activities.xlsx`: Tracks individual activities and their attributes.
    - `Day_Analytics.xlsx`: Summarizes daily metrics.
    - `To_do.xlsx`: makes a to do list with activities and their attributes
@@ -100,7 +102,7 @@ I suggest to use these scripts as a base to personalize the kind of data and fun
    - The aggregated difficulty as well as any details and comments added to the activities will be summarized in the output
 
 6. **To do list**
-   - Run  `Add_to_do.R` to add new activity to the to do list.
+   - Fill and run  `Add_to_do.R` to add new activity to the to do list.
 
 This is an ongoing project. It will probably be updated for weekly and monthly summaries in the future. 
 

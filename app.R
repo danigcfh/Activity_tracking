@@ -35,7 +35,7 @@ ui <- navbarPage(
              mainPanel(
                h4("Instructions"),
                p("Please upload the required files to proceed. Ensure the files are in the correct format. If you have not created your files, select `Create files`"),
-               actionButton("create_files", "Create and download template files"),
+               actionButton("create_files", "Create template files"),
                uiOutput("show_download")  # Placeholder for download button
              )
            )
@@ -44,7 +44,17 @@ ui <- navbarPage(
   # Add conditional access to other tabs
   tabPanel("Manage Data", value = "add_data", uiOutput("add_data_ui")),
   tabPanel("Raw Data", value = "raw_data", uiOutput("raw_data_ui")),
-  tabPanel("Summary", value = "summary", uiOutput("summary_ui"))
+  tabPanel("Summary", value = "summary", uiOutput("summary_ui")),
+  footer = tags$div(
+    "This work © 2024 by Daniela González is licensed under CC BY-NC-SA 4.0",
+    tags$br(),
+    tags$a(
+      href = "https://github.com/danigcfh/Activity_tracking",
+      "Visit GitHub for this project",
+      target = "_blank",
+      style = "margin-left: 10px;"
+    )
+  )
 )
 
 
@@ -369,6 +379,7 @@ server <- function(input, output, session) {
     to_do_sub_cat2 <- c(to_do_sub_cat2, "Other (Add new)", "None")
     
     # Define the UI layout with tabs
+    if (!is.null(activities()) && !is.null(per_day())&& !is.null(to_do())) {
     sidebarLayout(
       sidebarPanel(
         h4("Add your activity or daily evaluation data using the forms."),
@@ -487,6 +498,9 @@ server <- function(input, output, session) {
         )
         )
       )
+    } else {
+      h4("Please upload the required files to access this tab.")
+    }
   })
   
   # Observe event when the user selects "Other (Add new)" for Topic in to do list
@@ -1052,7 +1066,7 @@ server <- function(input, output, session) {
   })
   
   output$raw_data_ui <- renderUI({
-    if (!is.null(activities()) && !is.null(per_day())) {
+    if (!is.null(activities()) && !is.null(per_day())&& !is.null(to_do())) {
       sidebarLayout(
         sidebarPanel(
           h4("View Recorded Data"),

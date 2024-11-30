@@ -80,13 +80,13 @@ add_mood <- function(data = NA, sleep, anxiety, mood, health, exercise_low, exer
   if (length(existing_row) > 0) {
     # If the day already exists, compare values to check for updates
     old_row <- data[existing_row, colnames(new_row), drop = FALSE]
-    if (!all.equal(new_row, old_row, ignore.row.order = TRUE)) {
+    if (!isTRUE(all.equal(new_row, old_row, ignore.row.order = TRUE))) {
       # If any value is different, set needs_update to TRUE
       new_row$Needs_Update <- TRUE
-    }
+      }
     # Update the existing row with the new data (only for matching columns)
     data[existing_row, colnames(new_row)] <- new_row
-  } else {
+    } else {
     # If the day does not exist, add the new row (only matching columns)
     data <- bind_rows(data, new_row)
   }

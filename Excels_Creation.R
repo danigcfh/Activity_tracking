@@ -25,7 +25,7 @@ Analytics <- data.frame(
   Day = as.Date(character()),  # Explicitly set as Date
   Activities = integer(),
   Base_difficulty = numeric(),
-  Factor_difficylty = numeric(),
+  Factor_difficulty = numeric(),
   Weighted_difficulty = numeric(),
   Anxiety = numeric(),
   Mood = numeric(),
